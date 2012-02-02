@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, runCommand, runCommandls, shiftOutput, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, runCommand, runCommandcd, runCommandls, shiftOutput, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -35,7 +35,11 @@
         dir[entry] = dir;
       }
       if (dir[entry]['_type'] === 'directory') {
-        return dir[entry]['..'] = dir;
+        false;
+        console.log("==> " + dirname + ", " + entry);
+        if (dir[entry]['..'] === void 0) {
+          return dir[entry]['..'] = dir;
+        }
       }
     });
   };
@@ -74,6 +78,7 @@
     }
     return current_spot;
   };
+  window.accessDirectory = accessDirectory;
   prepareVisualConsole = function() {
     window.current_input = "";
     return updateCurrentInput();
@@ -135,13 +140,18 @@
     return bottom.text(bottom.text() + message);
   };
   runCommand = function(command) {
+    var args;
     shiftOutput();
+    args = command.split(" ");
+    console.log(args);
+    command = args.shift();
+    console.log(command);
     command = COMMANDS[command];
     if (command !== void 0) {
-      return command();
+      return command(args);
     }
   };
-  runCommandls = function() {
+  runCommandls = function(args) {
     var current_dir, dir, entry, _i, _len, _ref, _results;
     current_dir = window.current_location;
     dir = accessDirectory(current_dir);
@@ -149,13 +159,21 @@
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entry = _ref[_i];
-      console.log(entry);
       _results.push(print("" + entry + " "));
     }
     return _results;
   };
+  runCommandcd = function(args) {
+    var current_dir, dir;
+    current_dir = window.current_location;
+    dir = accessDirectory(current_dir);
+    if (dir[args[0]] !== void 0 && dir[args[0]]['_type'] === 'directory') {
+      return window.current_location = "" + window.current_location + "/" + args[0];
+    }
+  };
   COMMANDS = {
-    ls: runCommandls
+    ls: runCommandls,
+    cd: runCommandcd
   };
   shiftOutput = function() {
     var i, _fn;

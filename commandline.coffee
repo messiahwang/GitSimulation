@@ -33,7 +33,9 @@ prepareFileSystem = () ->
     if entry == '.'
       dir[entry] = dir
     if dir[entry]['_type'] == 'directory'
-      dir[entry]['..'] = dir
+      false
+      console.log("==> #{dirname}, #{entry}")
+      dir[entry]['..'] = dir if dir[entry]['..'] == undefined
   )
 
 
@@ -60,7 +62,11 @@ accessDirectory = (pathname) ->
     current_spot = current_spot[path]
   current_spot
 
+window.accessDirectory = accessDirectory
+
+
 # --------------- User Input Stuff -------------
+
 prepareVisualConsole = () ->
   window.current_input = ""
   updateCurrentInput()
@@ -121,18 +127,28 @@ print = (message) ->
 
 runCommand = (command) ->
   shiftOutput()
+  args = command.split(" ")
+  console.log(args)
+  command = args.shift()
+  console.log(command)
   command = COMMANDS[command]
-  command() if(command != undefined)
+  command(args) if(command != undefined)
 
-runCommandls = () ->
+runCommandls = (args) ->
   current_dir = window.current_location
   dir = accessDirectory(current_dir)
   for entry in dir['_entries']
-    console.log(entry)
     print("#{entry} ")
+
+runCommandcd = (args) ->
+  current_dir = window.current_location
+  dir = accessDirectory(current_dir)
+  if dir[args[0]] != undefined and dir[args[0]]['_type'] == 'directory'
+    window.current_location = "#{window.current_location}/#{args[0]}"
 
 COMMANDS =
   ls: runCommandls
+  cd: runCommandcd
 
 shiftOutput = () ->
   for i in [1..18]
