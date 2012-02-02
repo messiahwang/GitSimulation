@@ -1,0 +1,22 @@
+body {
+}
+#browser {
+  width:  600px;
+  height: 400px;
+  margin: auto auto auto auto;
+  border: solid;
+  /* background-color: Black;*/
+}
+
+#output {
+  background-color:Black;
+  color: #67C7DB;
+  font-family: courier, fixed, swiss, monospace, sans-serif;
+}
+
+#input {
+  width: 600px;
+  background-color: Black;
+  color: #67C7DB;
+  font-family: courier, fixed, swiss, monospace, sans-serif;
+}
