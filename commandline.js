@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, retrieveDir, runCommand, runCommandcd, runCommandls, runCommandmkdir, shiftOutput, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, retrieveDir, runCommand, runCommandcd, runCommandls, runCommandmkdir, setCurrentAndParentReferences, shiftOutput, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -7,7 +7,7 @@
   });
   prepareFileSystem = function() {
     window.file_system = {
-      '/': {
+      '': {
         _type: 'directory',
         _entries: ['.', '..', 'home'],
         home: {
@@ -30,13 +30,16 @@
       }
     };
     window.current_location = "/home/bob";
-    return crawl(window.file_system['/'], '/', function(dir, dirname, entry) {
+    return setCurrentAndParentReferences();
+  };
+  setCurrentAndParentReferences = function() {
+    window.file_system['']['home']['..'] = window.file_system['/'];
+    return crawl(window.file_system[''], '', function(dir, dirname, entry) {
       if (entry === '.') {
         dir[entry] = dir;
       }
       if (dir[entry]['_type'] === 'directory') {
         false;
-        console.log("==> " + dirname + ", " + entry);
         if (dir[entry]['..'] === void 0) {
           return dir[entry]['..'] = dir;
         }
@@ -46,7 +49,7 @@
   crawl = function(current_dir, current_name, action) {
     var continue_crawl, entries, entry, _i, _len, _results;
     if (current_dir == null) {
-      current_dir = window.file_system['/'];
+      current_dir = window.file_system[''];
     }
     if (action == null) {
       action = null;
@@ -55,7 +58,6 @@
     _results = [];
     for (_i = 0, _len = entries.length; _i < _len; _i++) {
       entry = entries[_i];
-      console.log(entry);
       if (action !== null) {
         action(current_dir, current_name, entry);
       }
@@ -71,7 +73,7 @@
     var current_spot, path, paths, _i, _len;
     paths = pathname.split("/");
     paths.shift();
-    current_spot = window.file_system['/'];
+    current_spot = window.file_system[''];
     for (_i = 0, _len = paths.length; _i < _len; _i++) {
       path = paths[_i];
       current_spot = current_spot[path];
@@ -143,9 +145,7 @@
     var args;
     shiftOutput();
     args = command.split(" ");
-    console.log(args);
     command = args.shift();
-    console.log(command);
     command = COMMANDS[command];
     if (command !== void 0) {
       return command(args);

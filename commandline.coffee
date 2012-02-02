@@ -1,17 +1,22 @@
+# Skip to sections of this document by searching
+# [File] for the handling of the pseudo file system
+# [Input] for the handling of user keyboard input
+# [Command] for operations involving commands that a user runs
+#
 $(document).ready(() ->
   prepareFileSystem()
   prepareKeyListener()
   prepareVisualConsole()
 )
 
-# --------------- File System Stuff -------------
+# --------------- [File] System Stuff -------------
 
 # A file system object is a directory or a file
 # that is indicated by the _type key
 # a file has text
 prepareFileSystem = () ->
   window.file_system =
-    '/':
+    '':
       _type: 'directory'
       _entries:['.', '..', 'home']
       home:
@@ -27,24 +32,27 @@ prepareFileSystem = () ->
           c:
             _type: 'file'
   window.current_location = "/home/bob"
-  # Makes all . point to the same directory
-  # and makes all .. point to the parent directory
-  crawl(window.file_system['/'], '/', (dir, dirname, entry) ->
+  setCurrentAndParentReferences()
+
+# Makes all . point to the same directory
+# and makes all .. point to the parent directory
+setCurrentAndParentReferences = () ->
+  window.file_system['']['home']['..'] = window.file_system['/']
+  crawl(window.file_system[''], '', (dir, dirname, entry) ->
     if entry == '.'
       dir[entry] = dir
     if dir[entry]['_type'] == 'directory'
       false
-      console.log("==> #{dirname}, #{entry}")
       dir[entry]['..'] = dir if dir[entry]['..'] == undefined
   )
 
 
+
 # Traverse the entire file system, applying the
 # given action function to all items
-crawl = (current_dir = window.file_system['/'], current_name, action = null) ->
+crawl = (current_dir = window.file_system[''], current_name, action = null) ->
   entries = current_dir['_entries']
   for entry in entries
-    console.log(entry)
     action(current_dir, current_name, entry) if action != null
     continue_crawl = current_dir[entry] != undefined and current_dir[entry]['_type'] == 'directory'
     continue_crawl = continue_crawl and current_dir[entry] != current_dir
@@ -57,7 +65,7 @@ window.crawl = crawl
 accessDirectory = (pathname) ->
   paths = pathname.split("/")
   paths.shift()
-  current_spot = window.file_system['/']
+  current_spot = window.file_system['']
   for path in paths
     current_spot = current_spot[path]
   current_spot
@@ -65,7 +73,7 @@ accessDirectory = (pathname) ->
 window.accessDirectory = accessDirectory
 
 
-# --------------- User Input Stuff -------------
+# --------------- User [Input] Stuff -------------
 
 prepareVisualConsole = () ->
   window.current_input = ""
@@ -120,7 +128,7 @@ window.reserved = RESERVED_KEYS
 
 ## -------- End of User Input Stuff --------------
 
-#-------------- Command stuff
+#------------- [Command] stuff --------------------
 print = (message) ->
   bottom = $('#tl19')
   bottom.text(bottom.text() + message)
@@ -128,9 +136,7 @@ print = (message) ->
 runCommand = (command) ->
   shiftOutput()
   args = command.split(" ")
-  console.log(args)
   command = args.shift()
-  console.log(command)
   command = COMMANDS[command]
   command(args) if(command != undefined)
 
