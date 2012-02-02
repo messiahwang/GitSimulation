@@ -1,16 +1,17 @@
 body {
 }
+
 #browser {
-  width:  600px;
+  width:  1200px;
   height: 400px;
   margin: auto auto auto auto;
-  border: solid;
   /* background-color: Black;*/
 }
 
 #terminal {
   width: 100%;
   background-color: black;
+  width: 600px;
   height: 400px;
   font-family: courier, fixed, swiss, monospace, sans-serif;
   color: #67C7DB;
@@ -19,5 +20,17 @@ body {
 .terminal_line {
   background-color: black;
   width: 600px;
-  height: 15px;
 }
+
+#info {
+  width: 300px;
+}
+
+#instructions{
+  width: 300px;
+}
+
+#info, #terminal, #instructions {
+  float: left;
+}
+
