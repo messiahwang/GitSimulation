@@ -1,0 +1,12 @@
+require 'fileutils'
+task :default => [:push_test]
+
+desc "deploy to master"
+task :deploy do
+  sh %{ssh ubuntu@davidpmah.com "cd ~/apps/GitSimulation && git pull origin master"}
+end
+
+desc "sync the code with the testing ground"
+task :push_test do
+  sh %{rsync -avz ./* ubuntu@davidpmah.com:~/test/gitsimulation/}
+end
