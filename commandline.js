@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, runCommand, runCommandcd, runCommandls, shiftOutput, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, retrieveDir, runCommand, runCommandcd, runCommandls, runCommandmkdir, shiftOutput, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -152,9 +152,8 @@
     }
   };
   runCommandls = function(args) {
-    var current_dir, dir, entry, _i, _len, _ref, _results;
-    current_dir = window.current_location;
-    dir = accessDirectory(current_dir);
+    var dir, entry, _i, _len, _ref, _results;
+    dir = retrieveDir();
     _ref = dir['_entries'];
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -164,16 +163,39 @@
     return _results;
   };
   runCommandcd = function(args) {
-    var current_dir, dir;
-    current_dir = window.current_location;
-    dir = accessDirectory(current_dir);
+    var dir;
+    dir = retrieveDir();
     if (dir[args[0]] !== void 0 && dir[args[0]]['_type'] === 'directory') {
       return window.current_location = "" + window.current_location + "/" + args[0];
     }
   };
+  runCommandmkdir = function(args) {
+    var dir, entry, _i, _len, _results;
+    dir = retrieveDir();
+    _results = [];
+    for (_i = 0, _len = args.length; _i < _len; _i++) {
+      entry = args[_i];
+      _results.push(dir[entry] === void 0 ? createDirectory(dir, entry) : void 0);
+    }
+    return _results;
+  };
+  retrieveDir = function() {
+    return accessDirectory(window.current_location);
+  };
+  createDirectory = function(dir, entry) {
+    dir[entry] = {
+      '..': dir,
+      _type: 'directory',
+      _entries: ['.', '..']
+    };
+    dir[entry]['.'] = dir;
+    dir['_entries'].push(entry);
+    return dir;
+  };
   COMMANDS = {
     ls: runCommandls,
-    cd: runCommandcd
+    cd: runCommandcd,
+    mkdir: runCommandmkdir
   };
   shiftOutput = function() {
     var i, _fn;

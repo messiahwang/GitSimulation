@@ -135,20 +135,37 @@ runCommand = (command) ->
   command(args) if(command != undefined)
 
 runCommandls = (args) ->
-  current_dir = window.current_location
-  dir = accessDirectory(current_dir)
+  dir = retrieveDir()
   for entry in dir['_entries']
     print("#{entry} ")
 
 runCommandcd = (args) ->
-  current_dir = window.current_location
-  dir = accessDirectory(current_dir)
+  dir = retrieveDir()
   if dir[args[0]] != undefined and dir[args[0]]['_type'] == 'directory'
     window.current_location = "#{window.current_location}/#{args[0]}"
 
+runCommandmkdir = (args) ->
+  dir = retrieveDir()
+  for entry in args
+    createDirectory(dir, entry) if dir[entry] == undefined
+
+retrieveDir = () ->
+  accessDirectory(window.current_location)
+
+createDirectory = (dir, entry) ->
+  dir[entry] =
+    '..':     dir
+    _type:    'directory'
+    _entries: ['.', '..']
+  dir[entry]['.'] = dir
+  dir['_entries'].push(entry)
+  dir
+
+
 COMMANDS =
-  ls: runCommandls
-  cd: runCommandcd
+  ls:    runCommandls
+  cd:    runCommandcd
+  mkdir: runCommandmkdir
 
 shiftOutput = () ->
   for i in [1..18]
