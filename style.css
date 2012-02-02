@@ -8,15 +8,16 @@ body {
   /* background-color: Black;*/
 }
 
-#output {
-  background-color:Black;
-  color: #67C7DB;
+#terminal {
+  width: 100%;
+  background-color: black;
+  height: 400px;
   font-family: courier, fixed, swiss, monospace, sans-serif;
+  color: #67C7DB;
 }
 
-#input {
+.terminal_line {
+  background-color: black;
   width: 600px;
-  background-color: Black;
-  color: #67C7DB;
-  font-family: courier, fixed, swiss, monospace, sans-serif;
+  height: 15px;
 }
