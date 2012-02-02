@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, retrieveDir, runCommand, runCommandcd, runCommandls, runCommandmkdir, setCurrentAndParentReferences, shiftOutput, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, createFile, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieve_input_line, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -17,13 +17,16 @@
             _type: 'directory',
             _entries: ['.', '..', 'a', 'b', 'c'],
             a: {
-              _type: 'file'
+              _type: 'file',
+              text: ""
             },
             b: {
-              _type: 'file'
+              _type: 'file',
+              text: ""
             },
             c: {
-              _type: 'file'
+              _type: 'file',
+              text: ""
             }
           }
         }
@@ -111,9 +114,7 @@
     return updateCurrentInput();
   };
   updateCurrentInput = function() {
-    var ps1;
-    ps1 = window.current_location;
-    return $('#tl20').text("" + ps1 + "$ " + window.current_input);
+    return $('#tl20').text(retrieve_input_line);
   };
   handleReservedKey = function(keyCode) {
     return RESERVED_KEYS[keyCode]();
@@ -126,6 +127,7 @@
   };
   inputEnter = function() {
     var command;
+    printLine(retrieve_input_line());
     command = window.current_input;
     window.current_input = "";
     runCommand(command);
@@ -141,9 +143,12 @@
     bottom = $('#tl19');
     return bottom.text(bottom.text() + message);
   };
+  printLine = function(message) {
+    shiftOutput();
+    return print(message);
+  };
   runCommand = function(command) {
     var args;
-    shiftOutput();
     args = command.split(" ");
     command = args.shift();
     command = COMMANDS[command];
@@ -151,8 +156,9 @@
       return command(args);
     }
   };
-  runCommandls = function(args) {
+  runCommandLs = function(args) {
     var dir, entry, _i, _len, _ref, _results;
+    shiftOutput();
     dir = retrieveDir();
     _ref = dir['_entries'];
     _results = [];
@@ -162,20 +168,30 @@
     }
     return _results;
   };
-  runCommandcd = function(args) {
+  runCommandCd = function(args) {
     var dir;
     dir = retrieveDir();
     if (dir[args[0]] !== void 0 && dir[args[0]]['_type'] === 'directory') {
       return window.current_location = "" + window.current_location + "/" + args[0];
     }
   };
-  runCommandmkdir = function(args) {
+  runCommandMkdir = function(args) {
     var dir, entry, _i, _len, _results;
     dir = retrieveDir();
     _results = [];
     for (_i = 0, _len = args.length; _i < _len; _i++) {
       entry = args[_i];
       _results.push(dir[entry] === void 0 ? createDirectory(dir, entry) : void 0);
+    }
+    return _results;
+  };
+  runCommandTouch = function(args) {
+    var dir, entry, _i, _len, _results;
+    dir = retrieveDir();
+    _results = [];
+    for (_i = 0, _len = args.length; _i < _len; _i++) {
+      entry = args[_i];
+      _results.push(dir[entry] === void 0 ? createFile(dir, entry) : void 0);
     }
     return _results;
   };
@@ -190,12 +206,21 @@
     };
     dir[entry]['.'] = dir;
     dir['_entries'].push(entry);
-    return dir;
+    return dir[entry];
+  };
+  createFile = function(dir, entry) {
+    dir[entry] = {
+      _type: 'file',
+      text: ""
+    };
+    dir['_entries'].push(entry);
+    return dir[entry];
   };
   COMMANDS = {
-    ls: runCommandls,
-    cd: runCommandcd,
-    mkdir: runCommandmkdir
+    ls: runCommandLs,
+    cd: runCommandCd,
+    mkdir: runCommandMkdir,
+    touch: runCommandTouch
   };
   shiftOutput = function() {
     var i, _fn;
@@ -208,5 +233,10 @@
       _fn(i);
     }
     return $('#tl19').text("");
+  };
+  retrieve_input_line = function() {
+    var ps1;
+    ps1 = window.current_location;
+    return "" + ps1 + "$ " + window.current_input;
   };
 }).call(this);

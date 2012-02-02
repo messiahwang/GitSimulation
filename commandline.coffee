@@ -12,7 +12,9 @@ $(document).ready(() ->
 # --------------- [File] System Stuff -------------
 
 # A file system object is a directory or a file
-# that is indicated by the _type key
+# Meta deta of an item is lead by _
+# _type => 'directory' | 'file'
+# a directory has _entries and links to other items
 # a file has text
 prepareFileSystem = () ->
   window.file_system =
@@ -27,10 +29,13 @@ prepareFileSystem = () ->
           _entries:['.', '..', 'a', 'b', 'c']
           a:
             _type: 'file'
+            text: ""
           b:
             _type: 'file'
+            text: ""
           c:
             _type: 'file'
+            text: ""
   window.current_location = "/home/bob"
   setCurrentAndParentReferences()
 
@@ -103,8 +108,7 @@ injectToInput = (character) ->
   updateCurrentInput()
 
 updateCurrentInput = () ->
-  ps1 = window.current_location
-  $('#tl20').text("#{ps1}$ #{window.current_input}")
+  $('#tl20').text(retrieve_input_line)
 
 handleReservedKey = (keyCode) ->
   RESERVED_KEYS[keyCode]()
@@ -116,6 +120,7 @@ inputBackspace = () ->
   updateCurrentInput()
 
 inputEnter = () ->
+  printLine(retrieve_input_line())
   command = window.current_input
   window.current_input = ""
   runCommand(command)
@@ -133,27 +138,36 @@ print = (message) ->
   bottom = $('#tl19')
   bottom.text(bottom.text() + message)
 
-runCommand = (command) ->
+printLine = (message) ->
   shiftOutput()
+  print(message)
+
+runCommand = (command) ->
   args = command.split(" ")
   command = args.shift()
   command = COMMANDS[command]
   command(args) if(command != undefined)
 
-runCommandls = (args) ->
+runCommandLs = (args) ->
+  shiftOutput()
   dir = retrieveDir()
   for entry in dir['_entries']
     print("#{entry} ")
 
-runCommandcd = (args) ->
+runCommandCd = (args) ->
   dir = retrieveDir()
   if dir[args[0]] != undefined and dir[args[0]]['_type'] == 'directory'
     window.current_location = "#{window.current_location}/#{args[0]}"
 
-runCommandmkdir = (args) ->
+runCommandMkdir = (args) ->
   dir = retrieveDir()
   for entry in args
     createDirectory(dir, entry) if dir[entry] == undefined
+
+runCommandTouch = (args) ->
+  dir = retrieveDir()
+  for entry in args
+    createFile(dir, entry) if dir[entry] == undefined
 
 retrieveDir = () ->
   accessDirectory(window.current_location)
@@ -165,13 +179,20 @@ createDirectory = (dir, entry) ->
     _entries: ['.', '..']
   dir[entry]['.'] = dir
   dir['_entries'].push(entry)
-  dir
+  dir[entry]
 
+createFile = (dir, entry) ->
+  dir[entry] =
+    _type: 'file'
+    text:  ""
+  dir['_entries'].push(entry)
+  dir[entry]
 
 COMMANDS =
-  ls:    runCommandls
-  cd:    runCommandcd
-  mkdir: runCommandmkdir
+  ls:    runCommandLs
+  cd:    runCommandCd
+  mkdir: runCommandMkdir
+  touch: runCommandTouch
 
 shiftOutput = () ->
   for i in [1..18]
@@ -180,3 +201,8 @@ shiftOutput = () ->
       $("#tl#{i}").text(previous)
   $('#tl19').text("")
 
+
+# -------------- [Misc] -----------
+retrieve_input_line = () ->
+  ps1 = window.current_location
+  "#{ps1}$ #{window.current_input}"
