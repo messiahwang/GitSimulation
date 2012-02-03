@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, createFile, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieve_input_line, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -15,18 +15,18 @@
           _entries: ['.', '..', 'bob'],
           bob: {
             _type: 'directory',
-            _entries: ['.', '..', 'a', 'b', 'c'],
-            a: {
+            _entries: ['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1'],
+            example_file_1: {
               _type: 'file',
               text: ""
             },
-            b: {
+            example_file_2: {
               _type: 'file',
               text: ""
             },
-            c: {
-              _type: 'file',
-              text: ""
+            example_directory_1: {
+              _type: 'directory',
+              _entries: ['.', '..']
             }
           }
         }
@@ -114,7 +114,12 @@
     return updateCurrentInput();
   };
   updateCurrentInput = function() {
-    return $('#tl20').text(retrieve_input_line);
+    var input_text;
+    input_text = substituteSpaces(retrieveInputLine());
+    return $('#tl20').html(input_text);
+  };
+  substituteSpaces = function(input) {
+    return input.replace(/\ /g, "&nbsp;");
   };
   handleReservedKey = function(keyCode) {
     return RESERVED_KEYS[keyCode]();
@@ -127,9 +132,8 @@
   };
   inputEnter = function() {
     var command;
-    printLine(retrieve_input_line());
-    command = window.current_input;
-    window.current_input = "";
+    printLine(extractInputLine());
+    command = extractCurrentInput();
     runCommand(command);
     return updateCurrentInput();
   };
@@ -138,35 +142,94 @@
     13: inputEnter
   };
   window.reserved = RESERVED_KEYS;
+  TERMINAL_WIDTH = 80;
   print = function(message) {
-    var bottom;
-    bottom = $('#tl19');
-    return bottom.text(bottom.text() + message);
-  };
-  printLine = function(message) {
-    shiftOutput();
-    return print(message);
-  };
-  runCommand = function(command) {
-    var args;
-    args = command.split(" ");
-    command = args.shift();
-    command = COMMANDS[command];
-    if (command !== void 0) {
-      return command(args);
-    }
-  };
-  runCommandLs = function(args) {
-    var dir, entry, _i, _len, _ref, _results;
-    shiftOutput();
-    dir = retrieveDir();
-    _ref = dir['_entries'];
+    var bottom, current_text, piece, _i, _len, _results;
+    message = message.split("\n");
+    bottom = $('#tl20');
+    current_text = bottom.text();
+    current_text += message.shift();
+    injectToOutput(current_text);
     _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      entry = _ref[_i];
-      _results.push(print("" + entry + " "));
+    for (_i = 0, _len = message.length; _i < _len; _i++) {
+      piece = message[_i];
+      shiftOutput();
+      _results.push(injectToOutput(piece));
     }
     return _results;
+  };
+  printLine = function(message) {
+    if (message == null) {
+      message = "";
+    }
+    return print("" + message + "\n");
+  };
+  injectToOutput = function(message) {
+    var bottom;
+    bottom = $('#tl20');
+    if (breakForLineBreaks(message)) {
+      return bottom.html(substituteSpaces(message));
+    }
+  };
+  breakForLineBreaks = function(message) {
+    var back, back_tags, bottom, current_bottom_text, front, front_tags, s_words, split_index, tags, words, words_and_tags;
+    bottom = $('#tl20');
+    current_bottom_text = bottom.text();
+    if (stripTags(message).length < TERMINAL_WIDTH) {
+      return true;
+    }
+    words_and_tags = pairWordsAndTags(message);
+    words = words_and_tags[0];
+    tags = words_and_tags[1];
+    s_words = words.join(" ");
+    front = s_words.substring(0, 80);
+    back = s_words.substring(80);
+    split_index = front.lastIndexOf(" ");
+    back = front.substring(split_index + 1) + back;
+    front = front.substring(0, split_index);
+    back = back.split(" ");
+    front = front.split(" ");
+    front_tags = [];
+    back_tags = tags;
+    while (front.length > front_tags.length) {
+      front_tags.push(back_tags.shift());
+    }
+    front = zipWordsAndTags(front, front_tags);
+    back = zipWordsAndTags(back, back_tags);
+    console.log(front);
+    console.log(back);
+    printLine(front);
+    print(back);
+    return false;
+  };
+  window.print = print;
+  window.printL = printLine;
+  runCommand = function(command) {
+    var args, command_name;
+    args = command.split(/\ +/);
+    command_name = args.shift();
+    command = COMMANDS[command_name];
+    if (command !== void 0) {
+      return command(args);
+    } else {
+      return unrecognizedCommand(command_name, args);
+    }
+  };
+  window.runCommand = runCommand;
+  unrecognizedCommand = function(comm, args) {
+    return printLine("" + comm + ": command not found");
+  };
+  runCommandLs = function(args) {
+    var dir, entry, entry_text, result, _i, _len, _ref;
+    dir = retrieveDir();
+    result = "";
+    _ref = dir['_entries'];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      entry = _ref[_i];
+      entry_text = dir[entry]['_type'] === 'directory' ? "<strong>" + entry + "</strong>" : entry;
+      result += "" + entry_text + " ";
+    }
+    return printLine(result.trim());
   };
   runCommandCd = function(args) {
     var dir;
@@ -223,20 +286,95 @@
     touch: runCommandTouch
   };
   shiftOutput = function() {
-    var i, _fn;
-    _fn = function(i) {
-      var previous;
-      previous = $("#tl" + (i + 1)).text();
-      return $("#tl" + i).text(previous);
-    };
-    for (i = 1; i <= 18; i++) {
-      _fn(i);
+    var i, _results;
+    _results = [];
+    for (i = 1; i <= 19; i++) {
+      _results.push((function(i) {
+        var previous;
+        previous = $("#tl" + (i + 1)).html();
+        return $("#tl" + i).html(previous);
+      })(i));
     }
-    return $('#tl19').text("");
+    return _results;
   };
-  retrieve_input_line = function() {
+  retrieveInputLine = function() {
     var ps1;
     ps1 = window.current_location;
     return "" + ps1 + "$ " + window.current_input;
   };
+  extractInputLine = function() {
+    var result;
+    result = retrieveInputLine();
+    $('#tl20').text("");
+    return result;
+  };
+  extractCurrentInput = function() {
+    var command;
+    command = window.current_input;
+    window.current_input = "";
+    return command;
+  };
+  stripTags = function(message) {
+    return message.replace(/(<([^>]+)>)/ig, "");
+  };
+  jQuery.fn.outerHTML = function() {
+    return $('<div>').append(this.eq(0).clone()).html();
+  };
+  pairWordsAndTags = function(message) {
+    var items, tags;
+    items = message.split(" ");
+    tags = items.map(function(t) {
+      return extractTagName(t);
+    });
+    items = items.map(function(t) {
+      return stripTags(t);
+    });
+    return [items, tags];
+  };
+  zipWordsAndTags = function(words, tags) {
+    var i, item, result, _ref;
+    result = [];
+    for (i = 0, _ref = words.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
+      item = $(document.createElement(tags[i])).text(words[i]);
+      result.push(item.outerHTML());
+    }
+    return result.join(" ");
+  };
+  extractTagName = function(text) {
+    var tag;
+    tag = $(text);
+    if (tag[0] !== void 0) {
+      return tag[0].tagName;
+    } else {
+      return "span";
+    }
+  };
+  stringifyFileSystem = function() {
+    var hashify;
+    hashify = function(root) {
+      var entry, result, _i, _len, _ref;
+      if (root == null) {
+        root = window.file_system[''];
+      }
+      result = $.extend({}, root);
+      if (root['_type'] === 'directory') {
+        root['.'] = {};
+        root['..'] = {};
+        _ref = root['_entries'];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          entry = _ref[_i];
+          if (entry === '.' || entry === '..') {
+            continue;
+          }
+          result[entry] = hashify(root[entry]);
+        }
+      }
+      return result;
+    };
+    return JSON.stringify(hashify());
+  };
+  window.retrieve_input_line = retrieveInputLine;
+  window.pair = pairWordsAndTags;
+  window.zip = zipWordsAndTags;
+  window.fsStringify = stringifyFileSystem;
 }).call(this);

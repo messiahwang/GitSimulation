@@ -2,7 +2,7 @@
 # [File] for the handling of the pseudo file system
 # [Input] for the handling of user keyboard input
 # [Command] for operations involving commands that a user runs
-#
+
 $(document).ready(() ->
   prepareFileSystem()
   prepareKeyListener()
@@ -10,6 +10,8 @@ $(document).ready(() ->
 )
 
 # --------------- [File] System Stuff -------------
+#
+# An entry is just text
 
 # A file system object is a directory or a file
 # Meta deta of an item is lead by _
@@ -19,23 +21,23 @@ $(document).ready(() ->
 prepareFileSystem = () ->
   window.file_system =
     '':
-      _type: 'directory'
-      _entries:['.', '..', 'home']
+      _type:    'directory'
+      _entries: ['.', '..', 'home']
       home:
-        _type: 'directory'
-        _entries:['.', '..', 'bob']
+        _type:    'directory'
+        _entries: ['.', '..', 'bob']
         bob:
-          _type: 'directory'
-          _entries:['.', '..', 'a', 'b', 'c']
-          a:
+          _type:    'directory'
+          _entries: ['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1']
+          example_file_1:
             _type: 'file'
-            text: ""
-          b:
+            text:  ""
+          example_file_2:
             _type: 'file'
-            text: ""
-          c:
-            _type: 'file'
-            text: ""
+            text:  ""
+          example_directory_1:
+            _type:    'directory'
+            _entries: ['.', '..']
   window.current_location = "/home/bob"
   setCurrentAndParentReferences()
 
@@ -51,8 +53,6 @@ setCurrentAndParentReferences = () ->
       dir[entry]['..'] = dir if dir[entry]['..'] == undefined
   )
 
-
-
 # Traverse the entire file system, applying the
 # given action function to all items
 crawl = (current_dir = window.file_system[''], current_name, action = null) ->
@@ -66,7 +66,6 @@ crawl = (current_dir = window.file_system[''], current_name, action = null) ->
 
 window.crawl = crawl
 
-
 accessDirectory = (pathname) ->
   paths = pathname.split("/")
   paths.shift()
@@ -74,6 +73,7 @@ accessDirectory = (pathname) ->
   for path in paths
     current_spot = current_spot[path]
   current_spot
+
 
 window.accessDirectory = accessDirectory
 
@@ -108,7 +108,11 @@ injectToInput = (character) ->
   updateCurrentInput()
 
 updateCurrentInput = () ->
-  $('#tl20').text(retrieve_input_line)
+  input_text = substituteSpaces(retrieveInputLine())
+  $('#tl20').html(input_text)
+
+substituteSpaces = (input) ->
+  input.replace(/\ /g, "&nbsp;")
 
 handleReservedKey = (keyCode) ->
   RESERVED_KEYS[keyCode]()
@@ -120,9 +124,8 @@ inputBackspace = () ->
   updateCurrentInput()
 
 inputEnter = () ->
-  printLine(retrieve_input_line())
-  command = window.current_input
-  window.current_input = ""
+  printLine(extractInputLine())
+  command = extractCurrentInput()
   runCommand(command)
   updateCurrentInput()
 
@@ -133,26 +136,89 @@ window.reserved = RESERVED_KEYS
 
 ## -------- End of User Input Stuff --------------
 
-#------------- [Command] stuff --------------------
-print = (message) ->
-  bottom = $('#tl19')
-  bottom.text(bottom.text() + message)
 
-printLine = (message) ->
-  shiftOutput()
-  print(message)
+TERMINAL_WIDTH = 80
+
+# --------- [Print] Stuff ----------------------
+print = (message) ->
+  message = message.split("\n")
+  bottom  = $('#tl20')
+  current_text  = bottom.text()
+  current_text += message.shift()
+  injectToOutput(current_text)
+  for piece in message
+    shiftOutput()
+    injectToOutput(piece)
+
+printLine = (message = "") ->
+  print("#{message}\n")
+
+injectToOutput = (message) ->
+  bottom  = $('#tl20')
+  bottom.html(substituteSpaces(message)) if breakForLineBreaks(message)
+
+# Either the message checks out(length is short enough) and it returns true
+# Or the message doesn't check out. Split that message and send it through print
+breakForLineBreaks = (message) ->
+  bottom  = $('#tl20')
+  current_bottom_text = bottom.text()
+  return true if stripTags(message).length < TERMINAL_WIDTH
+
+  words_and_tags = pairWordsAndTags(message)
+  words = words_and_tags[0]
+  tags  = words_and_tags[1]
+
+  s_words = words.join(" ")
+  front   = s_words.substring(0, 80)
+  back    = s_words.substring(80)
+
+  split_index = front.lastIndexOf(" ")
+
+  back  = front.substring(split_index + 1) + back
+  front = front.substring(0, split_index)
+
+  back  = back.split(" ")
+  front = front.split(" ")
+
+  front_tags = []
+  back_tags  = tags
+  while front.length > front_tags.length
+    front_tags.push(back_tags.shift())
+
+  front = zipWordsAndTags(front, front_tags)
+  back  = zipWordsAndTags(back, back_tags)
+
+  console.log(front)
+  console.log(back)
+
+  printLine(front)
+  print(back)
+  false
+
+
+window.print  = print
+window.printL = printLine
+
+#------------- [Command] stuff --------------------
 
 runCommand = (command) ->
-  args = command.split(" ")
-  command = args.shift()
-  command = COMMANDS[command]
-  command(args) if(command != undefined)
+  args    = command.split(/\ +/)
+  command_name = args.shift()
+  command = COMMANDS[command_name]
+  if(command != undefined) then command(args) else unrecognizedCommand(command_name, args)
+
+window.runCommand = runCommand
+
+unrecognizedCommand = (comm, args) ->
+  printLine("#{comm}: command not found")
 
 runCommandLs = (args) ->
-  shiftOutput()
-  dir = retrieveDir()
+  dir    = retrieveDir()
+  result = ""
   for entry in dir['_entries']
-    print("#{entry} ")
+    entry_text = if dir[entry]['_type'] == 'directory' then "<strong>#{entry}</strong>" else entry
+    result += "#{entry_text} "
+  printLine(result.trim())
 
 runCommandCd = (args) ->
   dir = retrieveDir()
@@ -195,14 +261,70 @@ COMMANDS =
   touch: runCommandTouch
 
 shiftOutput = () ->
-  for i in [1..18]
+  for i in [1..19]
     do (i) ->
-      previous = $("#tl#{i + 1}").text()
-      $("#tl#{i}").text(previous)
-  $('#tl19').text("")
+      previous = $("#tl#{i + 1}").html()
+      $("#tl#{i}").html(previous)
 
 
 # -------------- [Misc] -----------
-retrieve_input_line = () ->
+retrieveInputLine = () ->
   ps1 = window.current_location
   "#{ps1}$ #{window.current_input}"
+
+extractInputLine = () ->
+  result = retrieveInputLine()
+  $('#tl20').text("")
+  result
+
+extractCurrentInput = () ->
+  command = window.current_input
+  window.current_input = ""
+  command
+
+stripTags = (message) ->
+  message.replace(/(<([^>]+)>)/ig,"")
+
+jQuery.fn.outerHTML = () ->
+  $('<div>').append( this.eq(0).clone() ).html()
+
+# Assume there are no space in the tags
+# Kinda meant for inline elements, so this is reasonable
+pairWordsAndTags = (message) ->
+  items = message.split(" ")
+  tags  = items.map((t) -> extractTagName(t))
+  items = items.map((t) -> stripTags(t))
+  [items, tags]
+
+# words_and_tags is a parallel list of words to tags
+# Applies tags to the words and joins them into one string
+# Assumes that parallel lists are of the same length
+zipWordsAndTags = (words, tags) ->
+  result = []
+  for i in [0...words.length]
+    item = $(document.createElement(tags[i])).text(words[i])
+    result.push(item.outerHTML())
+  result.join(" ")
+
+extractTagName = (text) ->
+  tag = $(text)
+  if tag[0] != undefined then tag[0].tagName else "span"
+
+# This is in misc because it's really just for debugging
+# Makes json.. without the . or .. links
+stringifyFileSystem = () ->
+  hashify = (root = window.file_system['']) ->
+    result = $.extend({}, root)
+    if root['_type'] == 'directory'
+      root['.'] = {}
+      root['..'] = {}
+      for entry in root['_entries']
+        continue if entry == '.' or entry == '..'
+        result[entry] = hashify(root[entry])
+    result
+  JSON.stringify(hashify())
+
+window.retrieve_input_line = retrieveInputLine
+window.pair = pairWordsAndTags
+window.zip = zipWordsAndTags
+window.fsStringify = stringifyFileSystem
