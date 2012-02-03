@@ -126,12 +126,7 @@
     return updateCurrentInput();
   };
   inputEnter = function() {
-    var command;
-    printLine(retrieve_input_line());
-    command = window.current_input;
-    window.current_input = "";
-    runCommand(command);
-    return updateCurrentInput();
+    return printLine(retrieve_input_line());
   };
   RESERVED_KEYS = {
     8: inputBackspace,
@@ -139,14 +134,31 @@
   };
   window.reserved = RESERVED_KEYS;
   print = function(message) {
-    var bottom;
+    var bottom, current_text, piece, _i, _len, _results;
     bottom = $('#tl19');
-    return bottom.text(bottom.text() + message);
+    current_text = bottom.text();
+    console.log("message " + message);
+    message = message.split("\n");
+    console.log("--> " + (message.toString()) + " <--");
+    current_text += message.shift();
+    bottom.text(current_text);
+    _results = [];
+    for (_i = 0, _len = message.length; _i < _len; _i++) {
+      piece = message[_i];
+      console.log("shifting for " + piece);
+      shiftOutput();
+      _results.push(bottom.text(piece));
+    }
+    return _results;
   };
   printLine = function(message) {
-    shiftOutput();
-    return print(message);
+    if (message == null) {
+      message = "";
+    }
+    return print("" + message + "\n");
   };
+  window.print = print;
+  window.printL = printLine;
   runCommand = function(command) {
     var args;
     args = command.split(" ");
@@ -156,17 +168,17 @@
       return command(args);
     }
   };
+  window.runCommand = runCommand;
   runCommandLs = function(args) {
-    var dir, entry, _i, _len, _ref, _results;
-    shiftOutput();
+    var dir, entry, result, _i, _len, _ref;
     dir = retrieveDir();
+    result = "";
     _ref = dir['_entries'];
-    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entry = _ref[_i];
-      _results.push(print("" + entry + " "));
+      result += "" + entry + " ";
     }
-    return _results;
+    return printLine(result);
   };
   runCommandCd = function(args) {
     var dir;
@@ -224,12 +236,13 @@
   };
   shiftOutput = function() {
     var i, _fn;
+    console.log("SHIFTING OUTPUT");
     _fn = function(i) {
       var previous;
       previous = $("#tl" + (i + 1)).text();
       return $("#tl" + i).text(previous);
     };
-    for (i = 1; i <= 18; i++) {
+    for (i = 1; i <= 19; i++) {
       _fn(i);
     }
     return $('#tl19').text("");

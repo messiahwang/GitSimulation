@@ -121,10 +121,10 @@ inputBackspace = () ->
 
 inputEnter = () ->
   printLine(retrieve_input_line())
-  command = window.current_input
-  window.current_input = ""
-  runCommand(command)
-  updateCurrentInput()
+  # command = window.current_input
+  # window.current_input = ""
+  # runCommand(command)
+  # updateCurrentInput()
 
 RESERVED_KEYS =
   8:  inputBackspace
@@ -136,11 +136,22 @@ window.reserved = RESERVED_KEYS
 #------------- [Command] stuff --------------------
 print = (message) ->
   bottom = $('#tl19')
-  bottom.text(bottom.text() + message)
+  current_text = bottom.text()
+  console.log("message #{message}")
+  message = message.split("\n")
+  console.log("--> #{message.toString()} <--")
+  current_text += message.shift()
+  bottom.text(current_text)
+  for piece in message
+    console.log("shifting for #{piece}")
+    shiftOutput()
+    bottom.text(piece)
 
-printLine = (message) ->
-  shiftOutput()
-  print(message)
+printLine = (message = "") ->
+  print("#{message}\n")
+
+window.print = print
+window.printL = printLine
 
 runCommand = (command) ->
   args = command.split(" ")
@@ -148,11 +159,14 @@ runCommand = (command) ->
   command = COMMANDS[command]
   command(args) if(command != undefined)
 
+window.runCommand = runCommand
+
 runCommandLs = (args) ->
-  shiftOutput()
   dir = retrieveDir()
+  result = ""
   for entry in dir['_entries']
-    print("#{entry} ")
+    result += "#{entry} "
+  printLine(result)
 
 runCommandCd = (args) ->
   dir = retrieveDir()
@@ -195,7 +209,8 @@ COMMANDS =
   touch: runCommandTouch
 
 shiftOutput = () ->
-  for i in [1..18]
+  console.log("SHIFTING OUTPUT")
+  for i in [1..19]
     do (i) ->
       previous = $("#tl#{i + 1}").text()
       $("#tl#{i}").text(previous)
