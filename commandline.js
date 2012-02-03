@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extract_current_input, extract_input_line, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieve_input_line, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, substituteSpaces, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stripTags, substituteSpaces, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -115,7 +115,7 @@
   };
   updateCurrentInput = function() {
     var input_text;
-    input_text = substituteSpaces(retrieve_input_line());
+    input_text = substituteSpaces(retrieveInputLine());
     return $('#tl20').html(input_text);
   };
   substituteSpaces = function(input) {
@@ -132,8 +132,8 @@
   };
   inputEnter = function() {
     var command;
-    printLine(extract_input_line());
-    command = extract_current_input();
+    printLine(extractInputLine());
+    command = extractCurrentInput();
     runCommand(command);
     return updateCurrentInput();
   };
@@ -145,9 +145,9 @@
   TERMINAL_WIDTH = 80;
   print = function(message) {
     var bottom, current_text, piece, _i, _len, _results;
+    message = message.split("\n");
     bottom = $('#tl20');
     current_text = bottom.text();
-    message = message.split("\n");
     current_text += message.shift();
     injectToOutput(current_text);
     _results = [];
@@ -165,10 +165,29 @@
     return print("" + message + "\n");
   };
   injectToOutput = function(message) {
-    message = breakForLineBreaks(message);
-    return bottom.html(substituteSpaces(piece));
+    var bottom;
+    bottom = $('#tl20');
+    if (breakForLineBreaks(message)) {
+      return bottom.html(substituteSpaces(message));
+    }
   };
-  breakForLineBreaks = function(message) {};
+  breakForLineBreaks = function(message) {
+    var back, bottom, current_bottom_text, front, split_index;
+    console.log(message);
+    bottom = $('#tl20');
+    current_bottom_text = bottom.text();
+    if (stripTags(message).length < TERMINAL_WIDTH) {
+      return true;
+    }
+    front = message.substring(0, 80);
+    back = message.substring(80);
+    split_index = front.lastIndexOf(" ");
+    back = front.substring(split_index) + 1 + back;
+    front = front.substring(0, split_index);
+    printLine(front);
+    print(back);
+    return false;
+  };
   window.print = print;
   window.printL = printLine;
   runCommand = function(command) {
@@ -259,22 +278,25 @@
     }
     return _results;
   };
-  retrieve_input_line = function() {
+  retrieveInputLine = function() {
     var ps1;
     ps1 = window.current_location;
     return "" + ps1 + "$ " + window.current_input;
   };
-  extract_input_line = function() {
+  extractInputLine = function() {
     var result;
-    result = retrieve_input_line();
+    result = retrieveInputLine();
     $('#tl20').text("");
     return result;
   };
-  extract_current_input = function() {
+  extractCurrentInput = function() {
     var command;
     command = window.current_input;
     window.current_input = "";
     return command;
   };
-  window.retrieve_input_line = retrieve_input_line;
+  stripTags = function(message) {
+    return message.replace(/(<([^>]+)>)/ig, "");
+  };
+  window.retrieve_input_line = retrieveInputLine;
 }).call(this);

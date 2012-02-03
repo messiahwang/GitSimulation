@@ -108,7 +108,7 @@ injectToInput = (character) ->
   updateCurrentInput()
 
 updateCurrentInput = () ->
-  input_text = substituteSpaces(retrieve_input_line())
+  input_text = substituteSpaces(retrieveInputLine())
   $('#tl20').html(input_text)
 
 substituteSpaces = (input) ->
@@ -124,8 +124,8 @@ inputBackspace = () ->
   updateCurrentInput()
 
 inputEnter = () ->
-  printLine(extract_input_line())
-  command = extract_current_input()
+  printLine(extractInputLine())
+  command = extractCurrentInput()
   runCommand(command)
   updateCurrentInput()
 
@@ -154,13 +154,16 @@ printLine = (message = "") ->
   print("#{message}\n")
 
 injectToOutput = (message) ->
-  bottom.html(substituteSpaces(piece)) if breakForLineBreaks(message)
+  bottom  = $('#tl20')
+  bottom.html(substituteSpaces(message)) if breakForLineBreaks(message)
 
 # Either the message checks out(length is short enough) and it returns true
 # Or the message doesn't check out. Split that message and send it through print
 breakForLineBreaks = (message) ->
+  console.log(message)
+  bottom  = $('#tl20')
   current_bottom_text = bottom.text()
-  return true if message.length > current_bottom_text.length
+  return true if stripTags(message).length < TERMINAL_WIDTH
 
   front = message.substring(0, 80)
   back  = message.substring(80)
@@ -244,18 +247,21 @@ shiftOutput = () ->
 
 
 # -------------- [Misc] -----------
-retrieve_input_line = () ->
+retrieveInputLine = () ->
   ps1 = window.current_location
   "#{ps1}$ #{window.current_input}"
 
-extract_input_line = () ->
-  result = retrieve_input_line()
+extractInputLine = () ->
+  result = retrieveInputLine()
   $('#tl20').text("")
   result
 
-extract_current_input = () ->
+extractCurrentInput = () ->
   command = window.current_input
   window.current_input = ""
   command
 
-window.retrieve_input_line = retrieve_input_line
+stripTags = (message) ->
+  message.replace(/(<([^>]+)>)/ig,"")
+
+window.retrieve_input_line = retrieveInputLine
