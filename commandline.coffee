@@ -26,16 +26,16 @@ prepareFileSystem = () ->
         _entries:['.', '..', 'bob']
         bob:
           _type: 'directory'
-          _entries:['.', '..', 'a', 'b', 'c']
-          a:
+          _entries:['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1']
+          example_file_1:
             _type: 'file'
             text: ""
-          b:
+          example_file_2:
             _type: 'file'
             text: ""
-          c:
-            _type: 'file'
-            text: ""
+          example_directory_1:
+            _type: 'directory'
+            _entries: ['.', '..']
   window.current_location = "/home/bob"
   setCurrentAndParentReferences()
 
@@ -108,7 +108,11 @@ injectToInput = (character) ->
   updateCurrentInput()
 
 updateCurrentInput = () ->
-  $('#tl20').text(retrieve_input_line)
+  input_text = substituteSpaces(retrieve_input_line())
+  $('#tl20').html(input_text)
+
+substituteSpaces = (input) ->
+  input.replace(/\ /g, "&nbsp;")
 
 handleReservedKey = (keyCode) ->
   RESERVED_KEYS[keyCode]()
@@ -120,11 +124,10 @@ inputBackspace = () ->
   updateCurrentInput()
 
 inputEnter = () ->
-  printLine(retrieve_input_line())
-  # command = window.current_input
-  # window.current_input = ""
-  # runCommand(command)
-  # updateCurrentInput()
+  printLine(extract_input_line())
+  command = extract_current_input()
+  runCommand(command)
+  updateCurrentInput()
 
 RESERVED_KEYS =
   8:  inputBackspace
@@ -135,17 +138,14 @@ window.reserved = RESERVED_KEYS
 
 #------------- [Command] stuff --------------------
 print = (message) ->
-  bottom = $('#tl19')
+  bottom = $('#tl20')
   current_text = bottom.text()
-  console.log("message #{message}")
   message = message.split("\n")
-  console.log("--> #{message.toString()} <--")
   current_text += message.shift()
-  bottom.text(current_text)
+  bottom.html(substituteSpaces(current_text))
   for piece in message
-    console.log("shifting for #{piece}")
     shiftOutput()
-    bottom.text(piece)
+    bottom.html(substituteSpaces(piece))
 
 printLine = (message = "") ->
   print("#{message}\n")
@@ -165,7 +165,8 @@ runCommandLs = (args) ->
   dir = retrieveDir()
   result = ""
   for entry in dir['_entries']
-    result += "#{entry} "
+    entry_text = if dir[entry]['_type'] == 'directory' then "<strong>#{entry}</strong>" else entry
+    result += "#{entry_text}  "
   printLine(result)
 
 runCommandCd = (args) ->
@@ -209,15 +210,25 @@ COMMANDS =
   touch: runCommandTouch
 
 shiftOutput = () ->
-  console.log("SHIFTING OUTPUT")
   for i in [1..19]
     do (i) ->
-      previous = $("#tl#{i + 1}").text()
-      $("#tl#{i}").text(previous)
-  $('#tl19').text("")
+      previous = $("#tl#{i + 1}").html()
+      $("#tl#{i}").html(previous)
 
 
 # -------------- [Misc] -----------
 retrieve_input_line = () ->
   ps1 = window.current_location
   "#{ps1}$ #{window.current_input}"
+
+extract_input_line = () ->
+  result = retrieve_input_line()
+  $('#tl20').text("")
+  result
+
+extract_current_input = () ->
+  command = window.current_input
+  window.current_input = ""
+  command
+
+window.retrieve_input_line = retrieve_input_line

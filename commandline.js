@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, createFile, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieve_input_line, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, createFile, extract_current_input, extract_input_line, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieve_input_line, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, substituteSpaces, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -15,18 +15,18 @@
           _entries: ['.', '..', 'bob'],
           bob: {
             _type: 'directory',
-            _entries: ['.', '..', 'a', 'b', 'c'],
-            a: {
+            _entries: ['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1'],
+            example_file_1: {
               _type: 'file',
               text: ""
             },
-            b: {
+            example_file_2: {
               _type: 'file',
               text: ""
             },
-            c: {
-              _type: 'file',
-              text: ""
+            example_directory_1: {
+              _type: 'directory',
+              _entries: ['.', '..']
             }
           }
         }
@@ -114,7 +114,12 @@
     return updateCurrentInput();
   };
   updateCurrentInput = function() {
-    return $('#tl20').text(retrieve_input_line);
+    var input_text;
+    input_text = substituteSpaces(retrieve_input_line());
+    return $('#tl20').html(input_text);
+  };
+  substituteSpaces = function(input) {
+    return input.replace(/\ /g, "&nbsp;");
   };
   handleReservedKey = function(keyCode) {
     return RESERVED_KEYS[keyCode]();
@@ -126,7 +131,11 @@
     return updateCurrentInput();
   };
   inputEnter = function() {
-    return printLine(retrieve_input_line());
+    var command;
+    printLine(extract_input_line());
+    command = extract_current_input();
+    runCommand(command);
+    return updateCurrentInput();
   };
   RESERVED_KEYS = {
     8: inputBackspace,
@@ -135,19 +144,16 @@
   window.reserved = RESERVED_KEYS;
   print = function(message) {
     var bottom, current_text, piece, _i, _len, _results;
-    bottom = $('#tl19');
+    bottom = $('#tl20');
     current_text = bottom.text();
-    console.log("message " + message);
     message = message.split("\n");
-    console.log("--> " + (message.toString()) + " <--");
     current_text += message.shift();
-    bottom.text(current_text);
+    bottom.html(substituteSpaces(current_text));
     _results = [];
     for (_i = 0, _len = message.length; _i < _len; _i++) {
       piece = message[_i];
-      console.log("shifting for " + piece);
       shiftOutput();
-      _results.push(bottom.text(piece));
+      _results.push(bottom.html(substituteSpaces(piece)));
     }
     return _results;
   };
@@ -170,14 +176,16 @@
   };
   window.runCommand = runCommand;
   runCommandLs = function(args) {
-    var dir, entry, result, _i, _len, _ref;
+    var dir, entry, entry_text, result, _i, _len, _ref;
     dir = retrieveDir();
     result = "";
     _ref = dir['_entries'];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entry = _ref[_i];
-      result += "" + entry + " ";
+      entry_text = dir[entry]['_type'] === 'directory' ? "<strong>" + entry + "</strong>" : entry;
+      result += "" + entry_text + "  ";
     }
+    console.log("=>" + result);
     return printLine(result);
   };
   runCommandCd = function(args) {
@@ -235,21 +243,34 @@
     touch: runCommandTouch
   };
   shiftOutput = function() {
-    var i, _fn;
+    var i, _results;
     console.log("SHIFTING OUTPUT");
-    _fn = function(i) {
-      var previous;
-      previous = $("#tl" + (i + 1)).text();
-      return $("#tl" + i).text(previous);
-    };
+    _results = [];
     for (i = 1; i <= 19; i++) {
-      _fn(i);
+      _results.push((function(i) {
+        var previous;
+        previous = $("#tl" + (i + 1)).html();
+        return $("#tl" + i).html(previous);
+      })(i));
     }
-    return $('#tl19').text("");
+    return _results;
   };
   retrieve_input_line = function() {
     var ps1;
     ps1 = window.current_location;
     return "" + ps1 + "$ " + window.current_input;
   };
+  extract_input_line = function() {
+    var result;
+    result = retrieve_input_line();
+    $('#tl20').text("");
+    return result;
+  };
+  extract_current_input = function() {
+    var command;
+    command = window.current_input;
+    window.current_input = "";
+    return command;
+  };
+  window.retrieve_input_line = retrieve_input_line;
 }).call(this);
