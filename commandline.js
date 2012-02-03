@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, accessDirectory, crawl, createDirectory, createFile, extract_current_input, extract_input_line, handleKeyPress, handleReservedKey, injectToInput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieve_input_line, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, substituteSpaces, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extract_current_input, extract_input_line, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieve_input_line, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, substituteSpaces, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -142,18 +142,19 @@
     13: inputEnter
   };
   window.reserved = RESERVED_KEYS;
+  TERMINAL_WIDTH = 80;
   print = function(message) {
     var bottom, current_text, piece, _i, _len, _results;
     bottom = $('#tl20');
     current_text = bottom.text();
     message = message.split("\n");
     current_text += message.shift();
-    bottom.html(substituteSpaces(current_text));
+    injectToOutput(current_text);
     _results = [];
     for (_i = 0, _len = message.length; _i < _len; _i++) {
       piece = message[_i];
       shiftOutput();
-      _results.push(bottom.html(substituteSpaces(piece)));
+      _results.push(injectToOutput(piece));
     }
     return _results;
   };
@@ -163,6 +164,11 @@
     }
     return print("" + message + "\n");
   };
+  injectToOutput = function(message) {
+    message = breakForLineBreaks(message);
+    return bottom.html(substituteSpaces(piece));
+  };
+  breakForLineBreaks = function(message) {};
   window.print = print;
   window.printL = printLine;
   runCommand = function(command) {
@@ -185,7 +191,6 @@
       entry_text = dir[entry]['_type'] === 'directory' ? "<strong>" + entry + "</strong>" : entry;
       result += "" + entry_text + "  ";
     }
-    console.log("=>" + result);
     return printLine(result);
   };
   runCommandCd = function(args) {
@@ -244,7 +249,6 @@
   };
   shiftOutput = function() {
     var i, _results;
-    console.log("SHIFTING OUTPUT");
     _results = [];
     for (i = 1; i <= 19; i++) {
       _results.push((function(i) {

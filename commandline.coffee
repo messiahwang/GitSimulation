@@ -2,7 +2,7 @@
 # [File] for the handling of the pseudo file system
 # [Input] for the handling of user keyboard input
 # [Command] for operations involving commands that a user runs
-#
+
 $(document).ready(() ->
   prepareFileSystem()
   prepareKeyListener()
@@ -136,25 +136,52 @@ window.reserved = RESERVED_KEYS
 
 ## -------- End of User Input Stuff --------------
 
-#------------- [Command] stuff --------------------
+
+TERMINAL_WIDTH = 80
+
+# --------- [Print] Stuff ----------------------
 print = (message) ->
-  bottom = $('#tl20')
-  current_text = bottom.text()
   message = message.split("\n")
+  bottom  = $('#tl20')
+  current_text  = bottom.text()
   current_text += message.shift()
-  bottom.html(substituteSpaces(current_text))
+  injectToOutput(current_text)
   for piece in message
     shiftOutput()
-    bottom.html(substituteSpaces(piece))
+    injectToOutput(piece)
 
 printLine = (message = "") ->
   print("#{message}\n")
 
-window.print = print
+injectToOutput = (message) ->
+  bottom.html(substituteSpaces(piece)) if breakForLineBreaks(message)
+
+# Either the message checks out(length is short enough) and it returns true
+# Or the message doesn't check out. Split that message and send it through print
+breakForLineBreaks = (message) ->
+  current_bottom_text = bottom.text()
+  return true if message.length > current_bottom_text.length
+
+  front = message.substring(0, 80)
+  back  = message.substring(80)
+
+  split_index = front.lastIndexOf(" ")
+
+  back  = front.substring(split_index) + 1 + back
+  front = front.substring(0, split_index)
+
+  printLine(front)
+  print(back)
+  false
+
+
+window.print  = print
 window.printL = printLine
 
+#------------- [Command] stuff --------------------
+
 runCommand = (command) ->
-  args = command.split(" ")
+  args    = command.split(" ")
   command = args.shift()
   command = COMMANDS[command]
   command(args) if(command != undefined)
@@ -162,7 +189,7 @@ runCommand = (command) ->
 window.runCommand = runCommand
 
 runCommandLs = (args) ->
-  dir = retrieveDir()
+  dir    = retrieveDir()
   result = ""
   for entry in dir['_entries']
     entry_text = if dir[entry]['_type'] == 'directory' then "<strong>#{entry}</strong>" else entry

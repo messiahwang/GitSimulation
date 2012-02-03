@@ -2,7 +2,7 @@ body {
 }
 
 #browser {
-  width:  1200px;
+  width:  1400px;
   height: 400px;
   margin: auto auto auto auto;
   /* background-color: Black;*/
@@ -11,7 +11,7 @@ body {
 #terminal {
   width: 100%;
   background-color: black;
-  width: 600px;
+  width: 800px;
   height: 400px;
   font-family: courier, fixed, swiss, monospace, sans-serif;
   color: #67C7DB;
@@ -19,7 +19,7 @@ body {
 
 .terminal_line {
   background-color: black;
-  width: 600px;
+  width: 800px;
 }
 
 #info {
