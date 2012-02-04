@@ -165,13 +165,29 @@ breakForLineBreaks = (message) ->
   current_bottom_text = bottom.text()
   return true if stripTags(message).length < TERMINAL_WIDTH
 
-  front = message.substring(0, 80)
-  back  = message.substring(80)
+  words_and_tags = pairWordsAndTags(message)
+  words = words_and_tags[0]
+  tags  = words_and_tags[1]
+
+  s_words = words.join(" ")
+  front   = s_words.substring(0, 80)
+  back    = s_words.substring(80)
 
   split_index = front.lastIndexOf(" ")
 
   back  = front.substring(split_index) + 1 + back
   front = front.substring(0, split_index)
+
+  back  = back.split(" ")
+  front = front.split(" ")
+
+  front_tags = []
+  back_tags  = tags
+  while front.size > front_tags.size
+    front_tags.push(back_tags.shift)
+
+  front = front.join(" ")
+  back  = back.join(" ")
 
   printLine(front)
   print(back)
@@ -184,12 +200,15 @@ window.printL = printLine
 #------------- [Command] stuff --------------------
 
 runCommand = (command) ->
-  args    = command.split(" ")
-  command = args.shift()
-  command = COMMANDS[command]
-  command(args) if(command != undefined)
+  args    = command.split(/\ +/)
+  comm = args.shift()
+  comm = COMMANDS[comm]
+  if(comm != undefined) then command(args) else unrecognizedCommand(comm, args)
 
 window.runCommand = runCommand
+
+unrecognizedCommand = (comm, args) ->
+  printLine("#{comm}: command not found")
 
 runCommandLs = (args) ->
   dir    = retrieveDir()
@@ -264,4 +283,17 @@ extractCurrentInput = () ->
 stripTags = (message) ->
   message.replace(/(<([^>]+)>)/ig,"")
 
+# Assume there are no space in the tags
+# Kinda meant for inline elements, so this is reasonable
+pairWordsAndTags = (message) ->
+  items = message.split(" ")
+  tags  = items.map((t) -> extractTagName(t))
+  items = items.map((t) -> stripTags(t))
+  [items, tags]
+
+extractTagName = (text) ->
+  tag = $(text)
+  if tag[0] != undefined then tag[0].tagName else null
+
 window.retrieve_input_line = retrieveInputLine
+window.pair = pairWordsAndTags

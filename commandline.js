@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stripTags, substituteSpaces, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stripTags, substituteSpaces, updateCurrentInput;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -172,18 +172,31 @@
     }
   };
   breakForLineBreaks = function(message) {
-    var back, bottom, current_bottom_text, front, split_index;
+    var back, back_tags, bottom, current_bottom_text, front, front_tags, s_words, split_index, tags, words, words_and_tags;
     console.log(message);
     bottom = $('#tl20');
     current_bottom_text = bottom.text();
     if (stripTags(message).length < TERMINAL_WIDTH) {
       return true;
     }
-    front = message.substring(0, 80);
-    back = message.substring(80);
+    words_and_tags = pairWordsAndTags(message);
+    words = words_and_tags[0];
+    tags = words_and_tags[1];
+    s_words = words.join(" ");
+    front = s_words.substring(0, 80);
+    back = s_words.substring(80);
     split_index = front.lastIndexOf(" ");
     back = front.substring(split_index) + 1 + back;
     front = front.substring(0, split_index);
+    back = back.split(" ");
+    front = front.split(" ");
+    front_tags = [];
+    back_tags = tags;
+    while (front.size > front_tags.size) {
+      front_tags.push(back_tags.shift);
+    }
+    front = front.join(" ");
+    back = back.join(" ");
     printLine(front);
     print(back);
     return false;
@@ -192,7 +205,7 @@
   window.printL = printLine;
   runCommand = function(command) {
     var args;
-    args = command.split(" ");
+    args = command.split(/\ +/);
     command = args.shift();
     command = COMMANDS[command];
     if (command !== void 0) {
@@ -298,5 +311,26 @@
   stripTags = function(message) {
     return message.replace(/(<([^>]+)>)/ig, "");
   };
+  pairWordsAndTags = function(message) {
+    var items, tags;
+    items = message.split(" ");
+    tags = items.map(function(t) {
+      return extractTagName(t);
+    });
+    items = items.map(function(t) {
+      return stripTags(t);
+    });
+    return [items, tags];
+  };
+  extractTagName = function(text) {
+    var tag;
+    tag = $(text);
+    if (tag[0] !== void 0) {
+      return tag[0].tagName;
+    } else {
+      return null;
+    }
+  };
   window.retrieve_input_line = retrieveInputLine;
+  window.pair = pairWordsAndTags;
 }).call(this);
