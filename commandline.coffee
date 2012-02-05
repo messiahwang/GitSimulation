@@ -174,7 +174,7 @@ breakForLineBreaks = (message) ->
 
   split_index = front.lastIndexOf(" ")
 
-  back  = front.substring(split_index) + 1 + back
+  back  = front.substring(split_index + 1) + back
   front = front.substring(0, split_index)
 
   back  = back.split(" ")
@@ -185,12 +185,11 @@ breakForLineBreaks = (message) ->
   while front.length > front_tags.length
     front_tags.push(back_tags.shift())
 
-  console.log(front)
-  console.log(back)
-  console.log(front_tags)
-  console.log(back_tags)
   front = zipWordsAndTags(front, front_tags)
   back  = zipWordsAndTags(back, back_tags)
+
+  console.log(front)
+  console.log(back)
 
   printLine(front)
   print(back)
@@ -300,10 +299,8 @@ pairWordsAndTags = (message) ->
 # words_and_tags is a parallel list of words to tags
 # Applies tags to the words and joins them into one string
 # Assumes that parallel lists are of the same length
-zipWordsAndTags = (words_and_tags) ->
+zipWordsAndTags = (words, tags) ->
   result = []
-  words  = words_and_tags[0]
-  tags   = words_and_tags[1]
   for i in [0...words.length]
     item = $(document.createElement(tags[i])).text(words[i])
     result.push(item.outerHTML())

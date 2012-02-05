@@ -185,7 +185,7 @@
     front = s_words.substring(0, 80);
     back = s_words.substring(80);
     split_index = front.lastIndexOf(" ");
-    back = front.substring(split_index) + 1 + back;
+    back = front.substring(split_index + 1) + back;
     front = front.substring(0, split_index);
     back = back.split(" ");
     front = front.split(" ");
@@ -194,12 +194,10 @@
     while (front.length > front_tags.length) {
       front_tags.push(back_tags.shift());
     }
-    console.log(front);
-    console.log(back);
-    console.log(front_tags);
-    console.log(back_tags);
     front = zipWordsAndTags(front, front_tags);
     back = zipWordsAndTags(back, back_tags);
+    console.log(front);
+    console.log(back);
     printLine(front);
     print(back);
     return false;
@@ -333,11 +331,9 @@
     });
     return [items, tags];
   };
-  zipWordsAndTags = function(words_and_tags) {
-    var i, item, result, tags, words, _ref;
+  zipWordsAndTags = function(words, tags) {
+    var i, item, result, _ref;
     result = [];
-    words = words_and_tags[0];
-    tags = words_and_tags[1];
     for (i = 0, _ref = words.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
       item = $(document.createElement(tags[i])).text(words[i]);
       result.push(item.outerHTML());

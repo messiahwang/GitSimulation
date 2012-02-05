@@ -21,15 +21,14 @@ describe "GitSimulation" do
     @chrome.close
   end
 
+  # This will break if the terminal size is changed.. 
+  # Not worth the engineering time to generalize this now!
   describe "linebreaks" do
     it "shouldn't linebreak at all if there's too few things" do
-      sleep 2
-      run("ls")
-      sleep 5
-      @chrome.find_element(:id, "tl19").text.split(" ").should == ['39', '42', '9001', 'a', 'b', 'c']
       run('touch 39 42 9001 a b c d e f g h i j k l m n o p q r s t u v w x y z 1 2 3 4 5 6 7 8 9')
       run("ls")
-      @chrome.find_element(:id, "tl19").text.split(" ").should == ['39', '42', '9001', 'a', 'b', 'c',
+      sleep(5)
+      @chrome.find_element(:id, "tl19").text.split(" ").should == ['file39', 'file42', 'dir9001', 'a', 'b', 'c',
         'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
         'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9']
     end
