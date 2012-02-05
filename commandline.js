@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stripTags, substituteSpaces, updateCurrentInput;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -173,7 +173,6 @@
   };
   breakForLineBreaks = function(message) {
     var back, back_tags, bottom, current_bottom_text, front, front_tags, s_words, split_index, tags, words, words_and_tags;
-    console.log(message);
     bottom = $('#tl20');
     current_bottom_text = bottom.text();
     if (stripTags(message).length < TERMINAL_WIDTH) {
@@ -192,11 +191,15 @@
     front = front.split(" ");
     front_tags = [];
     back_tags = tags;
-    while (front.size > front_tags.size) {
-      front_tags.push(back_tags.shift);
+    while (front.length > front_tags.length) {
+      front_tags.push(back_tags.shift());
     }
-    front = front.join(" ");
-    back = back.join(" ");
+    console.log(front);
+    console.log(back);
+    console.log(front_tags);
+    console.log(back_tags);
+    front = zipWordsAndTags(front, front_tags);
+    back = zipWordsAndTags(back, back_tags);
     printLine(front);
     print(back);
     return false;
@@ -204,15 +207,20 @@
   window.print = print;
   window.printL = printLine;
   runCommand = function(command) {
-    var args;
+    var args, command_name;
     args = command.split(/\ +/);
-    command = args.shift();
-    command = COMMANDS[command];
+    command_name = args.shift();
+    command = COMMANDS[command_name];
     if (command !== void 0) {
       return command(args);
+    } else {
+      return unrecognizedCommand(command_name, args);
     }
   };
   window.runCommand = runCommand;
+  unrecognizedCommand = function(comm, args) {
+    return printLine("" + comm + ": command not found");
+  };
   runCommandLs = function(args) {
     var dir, entry, entry_text, result, _i, _len, _ref;
     dir = retrieveDir();
@@ -311,6 +319,9 @@
   stripTags = function(message) {
     return message.replace(/(<([^>]+)>)/ig, "");
   };
+  jQuery.fn.outerHTML = function() {
+    return $('<div>').append(this.eq(0).clone()).html();
+  };
   pairWordsAndTags = function(message) {
     var items, tags;
     items = message.split(" ");
@@ -322,15 +333,52 @@
     });
     return [items, tags];
   };
+  zipWordsAndTags = function(words_and_tags) {
+    var i, item, result, tags, words, _ref;
+    result = [];
+    words = words_and_tags[0];
+    tags = words_and_tags[1];
+    for (i = 0, _ref = words.length; 0 <= _ref ? i < _ref : i > _ref; 0 <= _ref ? i++ : i--) {
+      item = $(document.createElement(tags[i])).text(words[i]);
+      result.push(item.outerHTML());
+    }
+    return result.join(" ");
+  };
   extractTagName = function(text) {
     var tag;
     tag = $(text);
     if (tag[0] !== void 0) {
       return tag[0].tagName;
     } else {
-      return null;
+      return "span";
     }
+  };
+  stringifyFileSystem = function() {
+    var hashify;
+    hashify = function(root) {
+      var entry, result, _i, _len, _ref;
+      if (root == null) {
+        root = window.file_system[''];
+      }
+      result = $.extend({}, root);
+      if (root['_type'] === 'directory') {
+        root['.'] = {};
+        root['..'] = {};
+        _ref = root['_entries'];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          entry = _ref[_i];
+          if (entry === '.' || entry === '..') {
+            continue;
+          }
+          result[entry] = hashify(root[entry]);
+        }
+      }
+      return result;
+    };
+    return JSON.stringify(hashify());
   };
   window.retrieve_input_line = retrieveInputLine;
   window.pair = pairWordsAndTags;
+  window.zip = zipWordsAndTags;
+  window.fsStringify = stringifyFileSystem;
 }).call(this);

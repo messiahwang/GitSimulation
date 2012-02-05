@@ -10,6 +10,8 @@ $(document).ready(() ->
 )
 
 # --------------- [File] System Stuff -------------
+#
+# An entry is just text
 
 # A file system object is a directory or a file
 # Meta deta of an item is lead by _
@@ -19,22 +21,22 @@ $(document).ready(() ->
 prepareFileSystem = () ->
   window.file_system =
     '':
-      _type: 'directory'
-      _entries:['.', '..', 'home']
+      _type:    'directory'
+      _entries: ['.', '..', 'home']
       home:
-        _type: 'directory'
-        _entries:['.', '..', 'bob']
+        _type:    'directory'
+        _entries: ['.', '..', 'bob']
         bob:
-          _type: 'directory'
-          _entries:['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1']
+          _type:    'directory'
+          _entries: ['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1']
           example_file_1:
             _type: 'file'
-            text: ""
+            text:  ""
           example_file_2:
             _type: 'file'
-            text: ""
+            text:  ""
           example_directory_1:
-            _type: 'directory'
+            _type:    'directory'
             _entries: ['.', '..']
   window.current_location = "/home/bob"
   setCurrentAndParentReferences()
@@ -51,8 +53,6 @@ setCurrentAndParentReferences = () ->
       dir[entry]['..'] = dir if dir[entry]['..'] == undefined
   )
 
-
-
 # Traverse the entire file system, applying the
 # given action function to all items
 crawl = (current_dir = window.file_system[''], current_name, action = null) ->
@@ -66,7 +66,6 @@ crawl = (current_dir = window.file_system[''], current_name, action = null) ->
 
 window.crawl = crawl
 
-
 accessDirectory = (pathname) ->
   paths = pathname.split("/")
   paths.shift()
@@ -74,6 +73,7 @@ accessDirectory = (pathname) ->
   for path in paths
     current_spot = current_spot[path]
   current_spot
+
 
 window.accessDirectory = accessDirectory
 
@@ -160,7 +160,6 @@ injectToOutput = (message) ->
 # Either the message checks out(length is short enough) and it returns true
 # Or the message doesn't check out. Split that message and send it through print
 breakForLineBreaks = (message) ->
-  console.log(message)
   bottom  = $('#tl20')
   current_bottom_text = bottom.text()
   return true if stripTags(message).length < TERMINAL_WIDTH
@@ -183,11 +182,15 @@ breakForLineBreaks = (message) ->
 
   front_tags = []
   back_tags  = tags
-  while front.size > front_tags.size
-    front_tags.push(back_tags.shift)
+  while front.length > front_tags.length
+    front_tags.push(back_tags.shift())
 
-  front = front.join(" ")
-  back  = back.join(" ")
+  console.log(front)
+  console.log(back)
+  console.log(front_tags)
+  console.log(back_tags)
+  front = zipWordsAndTags(front, front_tags)
+  back  = zipWordsAndTags(back, back_tags)
 
   printLine(front)
   print(back)
@@ -201,9 +204,9 @@ window.printL = printLine
 
 runCommand = (command) ->
   args    = command.split(/\ +/)
-  comm = args.shift()
-  comm = COMMANDS[comm]
-  if(comm != undefined) then command(args) else unrecognizedCommand(comm, args)
+  command_name = args.shift()
+  command = COMMANDS[command_name]
+  if(command != undefined) then command(args) else unrecognizedCommand(command_name, args)
 
 window.runCommand = runCommand
 
@@ -283,6 +286,9 @@ extractCurrentInput = () ->
 stripTags = (message) ->
   message.replace(/(<([^>]+)>)/ig,"")
 
+jQuery.fn.outerHTML = () ->
+  $('<div>').append( this.eq(0).clone() ).html()
+
 # Assume there are no space in the tags
 # Kinda meant for inline elements, so this is reasonable
 pairWordsAndTags = (message) ->
@@ -291,9 +297,37 @@ pairWordsAndTags = (message) ->
   items = items.map((t) -> stripTags(t))
   [items, tags]
 
+# words_and_tags is a parallel list of words to tags
+# Applies tags to the words and joins them into one string
+# Assumes that parallel lists are of the same length
+zipWordsAndTags = (words_and_tags) ->
+  result = []
+  words  = words_and_tags[0]
+  tags   = words_and_tags[1]
+  for i in [0...words.length]
+    item = $(document.createElement(tags[i])).text(words[i])
+    result.push(item.outerHTML())
+  result.join(" ")
+
 extractTagName = (text) ->
   tag = $(text)
-  if tag[0] != undefined then tag[0].tagName else null
+  if tag[0] != undefined then tag[0].tagName else "span"
+
+# This is in misc because it's really just for debugging
+# Makes json.. without the . or .. links
+stringifyFileSystem = () ->
+  hashify = (root = window.file_system['']) ->
+    result = $.extend({}, root)
+    if root['_type'] == 'directory'
+      root['.'] = {}
+      root['..'] = {}
+      for entry in root['_entries']
+        continue if entry == '.' or entry == '..'
+        result[entry] = hashify(root[entry])
+    result
+  JSON.stringify(hashify())
 
 window.retrieve_input_line = retrieveInputLine
 window.pair = pairWordsAndTags
+window.zip = zipWordsAndTags
+window.fsStringify = stringifyFileSystem
