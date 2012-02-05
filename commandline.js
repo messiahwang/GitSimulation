@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -226,6 +226,7 @@
     _ref = dir['_entries'];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entry = _ref[_i];
+      console.log("=>" + entry);
       entry_text = dir[entry]['_type'] === 'directory' ? "<strong>" + entry + "</strong>" : entry;
       result += "" + entry_text + " ";
     }
@@ -280,16 +281,28 @@
     return _results;
   };
   runCommandEcho = function(args) {
-    var item, _i, _len, _results;
-    _results = [];
+    var item, result, _i, _len;
+    result = "";
     for (_i = 0, _len = args.length; _i < _len; _i++) {
       item = args[_i];
-      _results.push(print(item));
+      result += "" + item + " ";
     }
-    return _results;
+    return printLine(result.trim());
   };
   runCommandPwd = function(args) {
-    return print(window.current_location);
+    return printLine(window.current_location);
+  };
+  runCommandMv = function(args) {
+    var dir, entries, entry, old_loc, target;
+    dir = retrieveDir();
+    target = args.pop();
+    entry = args[0];
+    dir[target] = dir[entry];
+    delete dir[entry];
+    entries = dir['_entries'];
+    old_loc = entries.indexOf(entry);
+    dir['_entries'].push(target);
+    return dir['_entries'] = entries.slice(0, old_loc).concat(entries.slice(old_loc + 1, entries.length));
   };
   retrieveDir = function() {
     return accessDirectory(window.current_location);
@@ -316,7 +329,10 @@
     ls: runCommandLs,
     cd: runCommandCd,
     mkdir: runCommandMkdir,
-    touch: runCommandTouch
+    touch: runCommandTouch,
+    echo: runCommandEcho,
+    pwd: runCommandPwd,
+    mv: runCommandMv
   };
   shiftOutput = function() {
     var i, _results;

@@ -68,8 +68,29 @@ describe "GitSimulation" do
     it "should follow pure paths if the input starts with a /" do
       execute(%Q[window.current_location = "/dir9001/d1"])
       run("cd /dir9001/d2")
-      sleep 5
       execute("return window.current_location").should == "/dir9001/d2"
+    end
+  end
+
+  describe "echo" do
+    it "should report to standard output" do
+      run("echo apple")
+      @chrome.find_element(:id, "tl19").text.should == "apple"
+    end
+
+    it "should annihilate spaces" do
+      run("echo apple             turtle")
+      @chrome.find_element(:id, "tl19").text.should == "apple turtle"
+    end
+  end
+
+  describe "mv" do
+    it "should rename the asked file" do
+      run("mv file39 garpley")
+      fs = retrieve_file_system
+      fs[:_entries].include?('file39').should_not == true
+      fs[:garpley][:_text].should == "file39"
+      fs[:_entries].include?('garpley').should == true
     end
   end
 end

@@ -5,8 +5,8 @@ def generate_default_filesystem
     "" => {
       :_type     => 'directory',
       :_entries  => ['file39', 'file42', 'dir9001'],
-      :file39  => {:_type => "file", :_text => ""},
-      :file42  => {:_type => "file", :_text => ""},
+      :file39  => {:_type => "file", :_text => "file39"},
+      :file42  => {:_type => "file", :_text => "file42"},
       :dir9001 => {:_type => "directory", :_entries => []}
     }
   }

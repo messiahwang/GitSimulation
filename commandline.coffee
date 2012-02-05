@@ -1,7 +1,9 @@
 # Skip to sections of this document by searching
-# [File] for the handling of the pseudo file system
-# [Input] for the handling of user keyboard input
-# [Command] for operations involving commands that a user runs
+# <File> for the handling of the pseudo file system
+# <Input> for the handling of user keyboard input
+# <Output> standard or file output
+# <Command> for operations involving commands that a user runs
+# <Misc> contains helper functions that are pretty low level/tinkery
 
 $(document).ready(() ->
   prepareFileSystem()
@@ -9,7 +11,7 @@ $(document).ready(() ->
   prepareVisualConsole()
 )
 
-# --------------- [File] System Stuff -------------
+# --------------- <File> System Stuff -------------
 #
 # An entry is just text
 
@@ -78,7 +80,7 @@ accessDirectory = (pathname) ->
 window.accessDirectory = accessDirectory
 
 
-# --------------- User [Input] Stuff -------------
+# --------------- User <Input> Stuff -------------
 
 prepareVisualConsole = () ->
   window.current_input = ""
@@ -139,7 +141,7 @@ window.reserved = RESERVED_KEYS
 
 TERMINAL_WIDTH = 80
 
-# --------- [Print] Stuff ----------------------
+# --------- <Output> Stuff ----------------------
 print = (message) ->
   message = message.split("\n")
   bottom  = $('#tl20')
@@ -188,9 +190,6 @@ breakForLineBreaks = (message) ->
   front = zipWordsAndTags(front, front_tags)
   back  = zipWordsAndTags(back, back_tags)
 
-  console.log(front)
-  console.log(back)
-
   printLine(front)
   print(back)
   false
@@ -199,7 +198,7 @@ breakForLineBreaks = (message) ->
 window.print  = print
 window.printL = printLine
 
-#------------- [Command] stuff --------------------
+#------------- <Command> stuff --------------------
 
 runCommand = (command) ->
   args    = command.split(/\ +/)
@@ -258,11 +257,27 @@ runCommandTouch = (args) ->
     createFile(dir, entry) if dir[entry] == undefined
 
 runCommandEcho = (args) ->
+  result = ""
   for item in args
-    print(item)
+    result += "#{item} "
+  printLine(result.trim())
 
 runCommandPwd = (args) ->
-  print(window.current_location)
+  printLine(window.current_location)
+
+runCommandMv = (args) ->
+  dir = retrieveDir()
+  target = args.pop()
+  entry = args[0]
+
+  dir[target] = dir[entry]
+  delete dir[entry]
+
+  entries = dir['_entries']
+  old_loc = entries.indexOf(entry)
+  dir['_entries'].push(target)
+
+  dir['_entries'] = entries.slice(0, old_loc).concat entries.slice(old_loc + 1, entries.length)
 
 retrieveDir = () ->
   accessDirectory(window.current_location)
@@ -288,6 +303,9 @@ COMMANDS =
   cd:    runCommandCd
   mkdir: runCommandMkdir
   touch: runCommandTouch
+  echo:  runCommandEcho
+  pwd:   runCommandPwd
+  mv:    runCommandMv
 
 shiftOutput = () ->
   for i in [1..19]
@@ -296,7 +314,7 @@ shiftOutput = () ->
       $("#tl#{i}").html(previous)
 
 
-# -------------- [Misc] -----------
+# -------------- <Misc> -----------
 retrieveInputLine = () ->
   ps1 = window.current_location
   "#{ps1}$ #{window.current_input}"
