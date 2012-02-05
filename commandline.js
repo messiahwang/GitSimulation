@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandLs, runCommandMkdir, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -232,11 +232,32 @@
     return printLine(result.trim());
   };
   runCommandCd = function(args) {
-    var dir;
-    dir = retrieveDir();
-    if (dir[args[0]] !== void 0 && dir[args[0]]['_type'] === 'directory') {
-      return window.current_location = "" + window.current_location + "/" + args[0];
+    var dir, failure, original_location, target, targets, _i, _len;
+    original_location = window.current_location;
+    targets = args[0].split("/");
+    dir = targets[0] !== "" ? retrieveDir() : (targets.shift(), window.current_location = "", window.file_system[""]);
+    failure = false;
+    for (_i = 0, _len = targets.length; _i < _len; _i++) {
+      target = targets[_i];
+      if (dir[target] !== void 0) {
+        if (dir[target]['_type'] === 'directory') {
+          window.current_location = "" + window.current_location + "/" + target;
+          dir = dir[target];
+        } else {
+          printL("cd: " + args[0] + ": Not a directory");
+          failure = true;
+          break;
+        }
+      } else {
+        printL("cd: " + args[0] + ": No such file or directory");
+        failure = true;
+        break;
+      }
     }
+    if (failure) {
+      window.current_location = original_location;
+    }
+    return window.current_location;
   };
   runCommandMkdir = function(args) {
     var dir, entry, _i, _len, _results;
@@ -257,6 +278,18 @@
       _results.push(dir[entry] === void 0 ? createFile(dir, entry) : void 0);
     }
     return _results;
+  };
+  runCommandEcho = function(args) {
+    var item, _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = args.length; _i < _len; _i++) {
+      item = args[_i];
+      _results.push(print(item));
+    }
+    return _results;
+  };
+  runCommandPwd = function(args) {
+    return print(window.current_location);
   };
   retrieveDir = function() {
     return accessDirectory(window.current_location);

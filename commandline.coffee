@@ -221,9 +221,31 @@ runCommandLs = (args) ->
   printLine(result.trim())
 
 runCommandCd = (args) ->
-  dir = retrieveDir()
-  if dir[args[0]] != undefined and dir[args[0]]['_type'] == 'directory'
-    window.current_location = "#{window.current_location}/#{args[0]}"
+  original_location = window.current_location
+  targets = args[0].split("/")
+  dir = if targets[0] != ""
+    retrieveDir()
+  else
+    targets.shift()
+    window.current_location = ""
+    window.file_system[""]
+  failure = false
+  for target in targets
+    if dir[target] != undefined
+      if dir[target]['_type'] == 'directory'
+        window.current_location = "#{window.current_location}/#{target}"
+        dir = dir[target]
+      else
+        printL("cd: #{args[0]}: Not a directory")
+        failure = true
+        break
+    else
+      printL("cd: #{args[0]}: No such file or directory")
+      failure = true
+      break
+  if failure
+    window.current_location = original_location
+  window.current_location
 
 runCommandMkdir = (args) ->
   dir = retrieveDir()
@@ -234,6 +256,13 @@ runCommandTouch = (args) ->
   dir = retrieveDir()
   for entry in args
     createFile(dir, entry) if dir[entry] == undefined
+
+runCommandEcho = (args) ->
+  for item in args
+    print(item)
+
+runCommandPwd = (args) ->
+  print(window.current_location)
 
 retrieveDir = () ->
   accessDirectory(window.current_location)

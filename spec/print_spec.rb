@@ -14,7 +14,7 @@ describe "GitSimulation" do
   before :each do
     @chrome = Selenium::WebDriver.for :chrome
     @chrome.get "http://davidpmah.com/test/gitsimulation"
-    set_default_environment(@chrome)
+    set_environment(@chrome)
   end
 
   after :each do
