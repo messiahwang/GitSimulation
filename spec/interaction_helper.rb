@@ -3,18 +3,41 @@ require 'json'
 def generate_default_filesystem
   {
     "" => {
-      :_type     => 'dictionary',
+      :_type     => 'directory',
       :_entries  => ['file39', 'file42', 'dir9001'],
-      :file39  => {:_type => "file", :_text => ""},
-      :file42  => {:_type => "file", :_text => ""},
+      :file39  => {:_type => "file", :_text => "file39"},
+      :file42  => {:_type => "file", :_text => "file42"},
       :dir9001 => {:_type => "directory", :_entries => []}
     }
-  }.to_json
+  }
+end
+
+def generate_extended_filesystem
+ fs = generate_default_filesystem
+ d  = fs[""][:dir9001]
+ d['_entries'] = ['d1', 'd2', 'f1']
+ d[:d1] = {:_type => "directory", :_entries => []}
+ d[:d2] = {:_type => "directory", :_entries => []}
+ d[:f1] = {:_type => "file", :_text => ""}
+ fs
 end
 
 def set_default_environment(browser)
-  browser.execute_script(%Q[window.file_system = #{generate_default_filesystem}])
+  browser.execute_script(%Q[window.file_system = #{generate_default_filesystem.to_json}])
   browser.execute_script(%Q[window.current_location = ""])
+end
+
+def set_extended_environment(browser)
+  browser.execute_script(%Q[window.file_system = #{generate_extended_filesystem.to_json}])
+  browser.execute_script(%Q[window.current_location = ""])
+end
+
+def set_environment(browser, type = :default)
+  if type == :default
+    set_default_environment(browser)
+  else
+    set_extended_environment(browser)
+  end
 end
 
 def run_command(browser, command)

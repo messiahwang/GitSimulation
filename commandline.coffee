@@ -1,7 +1,9 @@
 # Skip to sections of this document by searching
-# [File] for the handling of the pseudo file system
-# [Input] for the handling of user keyboard input
-# [Command] for operations involving commands that a user runs
+# <File> for the handling of the pseudo file system
+# <Input> for the handling of user keyboard input
+# <Output> standard or file output
+# <Command> for operations involving commands that a user runs
+# <Misc> contains helper functions that are pretty low level/tinkery
 
 $(document).ready(() ->
   prepareFileSystem()
@@ -9,7 +11,7 @@ $(document).ready(() ->
   prepareVisualConsole()
 )
 
-# --------------- [File] System Stuff -------------
+# --------------- <File> System Stuff -------------
 #
 # An entry is just text
 
@@ -78,7 +80,7 @@ accessDirectory = (pathname) ->
 window.accessDirectory = accessDirectory
 
 
-# --------------- User [Input] Stuff -------------
+# --------------- User <Input> Stuff -------------
 
 prepareVisualConsole = () ->
   window.current_input = ""
@@ -139,7 +141,7 @@ window.reserved = RESERVED_KEYS
 
 TERMINAL_WIDTH = 80
 
-# --------- [Print] Stuff ----------------------
+# --------- <Output> Stuff ----------------------
 print = (message) ->
   message = message.split("\n")
   bottom  = $('#tl20')
@@ -188,9 +190,6 @@ breakForLineBreaks = (message) ->
   front = zipWordsAndTags(front, front_tags)
   back  = zipWordsAndTags(back, back_tags)
 
-  console.log(front)
-  console.log(back)
-
   printLine(front)
   print(back)
   false
@@ -199,7 +198,7 @@ breakForLineBreaks = (message) ->
 window.print  = print
 window.printL = printLine
 
-#------------- [Command] stuff --------------------
+#------------- <Command> stuff --------------------
 
 runCommand = (command) ->
   args    = command.split(/\ +/)
@@ -221,9 +220,31 @@ runCommandLs = (args) ->
   printLine(result.trim())
 
 runCommandCd = (args) ->
-  dir = retrieveDir()
-  if dir[args[0]] != undefined and dir[args[0]]['_type'] == 'directory'
-    window.current_location = "#{window.current_location}/#{args[0]}"
+  original_location = window.current_location
+  targets = args[0].split("/")
+  dir = if targets[0] != ""
+    retrieveDir()
+  else
+    targets.shift()
+    window.current_location = ""
+    window.file_system[""]
+  failure = false
+  for target in targets
+    if dir[target] != undefined
+      if dir[target]['_type'] == 'directory'
+        window.current_location = "#{window.current_location}/#{target}"
+        dir = dir[target]
+      else
+        printL("cd: #{args[0]}: Not a directory")
+        failure = true
+        break
+    else
+      printL("cd: #{args[0]}: No such file or directory")
+      failure = true
+      break
+  if failure
+    window.current_location = original_location
+  window.current_location
 
 runCommandMkdir = (args) ->
   dir = retrieveDir()
@@ -234,6 +255,46 @@ runCommandTouch = (args) ->
   dir = retrieveDir()
   for entry in args
     createFile(dir, entry) if dir[entry] == undefined
+
+runCommandEcho = (args) ->
+  result = ""
+  for item in args
+    result += "#{item} "
+  printLine(result.trim())
+
+runCommandPwd = (args) ->
+  printLine(window.current_location)
+
+runCommandMv = (args) ->
+  if args.length < 2
+    printLine "mv: missing destination file operand after `#{args[0]}'"
+    return
+
+  target = args.pop()
+  entry = args[0]
+
+  old_dir = retrieveDir()
+
+  if old_dir[target] != undefined
+    if old_dir[target]['_type'] == 'directory'
+      new_dir = old_dir[target]
+      target_name = entry
+    else
+      printL("mv: target `#{target}' is not a directory")
+      return
+  else
+    target_name = target
+    new_dir = old_dir
+
+  # Rewrite state given entry, target_name, new_dir, old_dir
+  new_dir[target_name] = old_dir[entry]
+  delete old_dir[entry]
+
+  entries = old_dir['_entries']
+  old_loc = entries.indexOf(entry)
+  old_dir['_entries'] = entries.slice(0, old_loc).concat entries.slice(old_loc + 1, entries.length)
+
+  new_dir['_entries'].push(target_name)
 
 retrieveDir = () ->
   accessDirectory(window.current_location)
@@ -259,6 +320,9 @@ COMMANDS =
   cd:    runCommandCd
   mkdir: runCommandMkdir
   touch: runCommandTouch
+  echo:  runCommandEcho
+  pwd:   runCommandPwd
+  mv:    runCommandMv
 
 shiftOutput = () ->
   for i in [1..19]
@@ -267,7 +331,7 @@ shiftOutput = () ->
       $("#tl#{i}").html(previous)
 
 
-# -------------- [Misc] -----------
+# -------------- <Misc> -----------
 retrieveInputLine = () ->
   ps1 = window.current_location
   "#{ps1}$ #{window.current_input}"
@@ -316,8 +380,8 @@ stringifyFileSystem = () ->
   hashify = (root = window.file_system['']) ->
     result = $.extend({}, root)
     if root['_type'] == 'directory'
-      root['.'] = {}
-      root['..'] = {}
+      root['.'] = {} if root['.'] != undefined
+      root['..'] = {} if root['..'] != undefined
       for entry in root['_entries']
         continue if entry == '.' or entry == '..'
         result[entry] = hashify(root[entry])
