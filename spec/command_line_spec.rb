@@ -92,5 +92,21 @@ describe "GitSimulation" do
       fs[:garpley][:_text].should == "file39"
       fs[:_entries].include?('garpley').should == true
     end
+
+    it "should stop the user from replacing files" do
+      fs = retrieve_file_system
+      run("mv file39 file42")
+      @chrome.find_element(:id, "tl19").text.should == "mv: target `file42' is not a directory"
+      new_fs = retrieve_file_system
+      fs.should == new_fs
+    end
+
+    it "should move the asked file" do
+      run("mv file39 dir9001")
+      fs = retrieve_file_system
+      fs[:_entries].include?('file39').should_not == true
+      fs[:dir9001][:file39][:_text].should == "file39"
+      fs[:dir9001][:_entries].include?('file39').should == true
+    end
   end
 end

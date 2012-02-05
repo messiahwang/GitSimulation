@@ -196,8 +196,6 @@
     }
     front = zipWordsAndTags(front, front_tags);
     back = zipWordsAndTags(back, back_tags);
-    console.log(front);
-    console.log(back);
     printLine(front);
     print(back);
     return false;
@@ -226,7 +224,6 @@
     _ref = dir['_entries'];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entry = _ref[_i];
-      console.log("=>" + entry);
       entry_text = dir[entry]['_type'] === 'directory' ? "<strong>" + entry + "</strong>" : entry;
       result += "" + entry_text + " ";
     }
@@ -293,16 +290,28 @@
     return printLine(window.current_location);
   };
   runCommandMv = function(args) {
-    var dir, entries, entry, old_loc, target;
-    dir = retrieveDir();
+    var entries, entry, new_dir, old_dir, old_loc, target, target_name;
     target = args.pop();
     entry = args[0];
-    dir[target] = dir[entry];
-    delete dir[entry];
-    entries = dir['_entries'];
+    old_dir = retrieveDir();
+    if (old_dir[target] !== void 0) {
+      if (old_dir[target]['_type'] === 'directory') {
+        new_dir = old_dir[target];
+        target_name = entry;
+      } else {
+        printL("mv: target `" + target + "' is not a directory");
+        return;
+      }
+    } else {
+      target_name = target;
+      new_dir = old_dir;
+    }
+    new_dir[target_name] = old_dir[entry];
+    delete old_dir[entry];
+    entries = old_dir['_entries'];
     old_loc = entries.indexOf(entry);
-    dir['_entries'].push(target);
-    return dir['_entries'] = entries.slice(0, old_loc).concat(entries.slice(old_loc + 1, entries.length));
+    old_dir['_entries'] = entries.slice(0, old_loc).concat(entries.slice(old_loc + 1, entries.length));
+    return new_dir['_entries'].push(target_name);
   };
   retrieveDir = function() {
     return accessDirectory(window.current_location);
@@ -407,8 +416,12 @@
       }
       result = $.extend({}, root);
       if (root['_type'] === 'directory') {
-        root['.'] = {};
-        root['..'] = {};
+        if (root['.'] !== void 0) {
+          root['.'] = {};
+        }
+        if (root['..'] !== void 0) {
+          root['..'] = {};
+        }
         _ref = root['_entries'];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           entry = _ref[_i];

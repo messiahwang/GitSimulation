@@ -266,18 +266,30 @@ runCommandPwd = (args) ->
   printLine(window.current_location)
 
 runCommandMv = (args) ->
-  dir = retrieveDir()
   target = args.pop()
   entry = args[0]
 
-  dir[target] = dir[entry]
-  delete dir[entry]
+  old_dir = retrieveDir()
 
-  entries = dir['_entries']
+  if old_dir[target] != undefined
+    if old_dir[target]['_type'] == 'directory'
+      new_dir = old_dir[target]
+      target_name = entry
+    else
+      printL("mv: target `#{target}' is not a directory")
+      return
+  else
+    target_name = target
+    new_dir = old_dir
+
+  new_dir[target_name] = old_dir[entry]
+  delete old_dir[entry]
+
+  entries = old_dir['_entries']
   old_loc = entries.indexOf(entry)
-  dir['_entries'].push(target)
+  old_dir['_entries'] = entries.slice(0, old_loc).concat entries.slice(old_loc + 1, entries.length)
 
-  dir['_entries'] = entries.slice(0, old_loc).concat entries.slice(old_loc + 1, entries.length)
+  new_dir['_entries'].push(target_name)
 
 retrieveDir = () ->
   accessDirectory(window.current_location)
@@ -363,8 +375,8 @@ stringifyFileSystem = () ->
   hashify = (root = window.file_system['']) ->
     result = $.extend({}, root)
     if root['_type'] == 'directory'
-      root['.'] = {}
-      root['..'] = {}
+      root['.'] = {} if root['.'] != undefined
+      root['..'] = {} if root['..'] != undefined
       for entry in root['_entries']
         continue if entry == '.' or entry == '..'
         result[entry] = hashify(root[entry])
