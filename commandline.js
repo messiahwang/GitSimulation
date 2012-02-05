@@ -227,9 +227,9 @@
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entry = _ref[_i];
       entry_text = dir[entry]['_type'] === 'directory' ? "<strong>" + entry + "</strong>" : entry;
-      result += "" + entry_text + "  ";
+      result += "" + entry_text + " ";
     }
-    return printLine(result);
+    return printLine(result.trim());
   };
   runCommandCd = function(args) {
     var dir;

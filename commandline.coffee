@@ -217,8 +217,8 @@ runCommandLs = (args) ->
   result = ""
   for entry in dir['_entries']
     entry_text = if dir[entry]['_type'] == 'directory' then "<strong>#{entry}</strong>" else entry
-    result += "#{entry_text}  "
-  printLine(result)
+    result += "#{entry_text} "
+  printLine(result.trim())
 
 runCommandCd = (args) ->
   dir = retrieveDir()

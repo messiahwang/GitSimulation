@@ -22,7 +22,7 @@ describe "GitSimulation" do
   describe "ls" do
     it "should read from the local _entries list" do
       run('ls')
-      @chrome.find_element(:id, "tl19").text.split(" ").should == ['file39', 'file42', 'dir9001']
+      @chrome.find_element(:id, "tl19").text.should == "file39 file42 dir9001"
     end
   end
 

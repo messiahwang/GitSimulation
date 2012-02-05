@@ -18,6 +18,7 @@ def set_default_environment(browser)
 end
 
 def run_command(browser, command)
+  sleep 0.1
   browser.keyboard.send_keys(command)
   browser.keyboard.send_keys(:enter)
 end
