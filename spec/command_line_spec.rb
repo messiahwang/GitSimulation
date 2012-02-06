@@ -35,7 +35,7 @@ describe "GitSimulation" do
     end
   end
 
-  describe 'touch' do
+  describe 'mkdir' do
     it "should create all of these directories in the local path" do
       run('mkdir a b c')
       fs = retrieve_file_system()
@@ -91,6 +91,13 @@ describe "GitSimulation" do
     it "should annihilate spaces" do
       run("echo apple             turtle")
       @chrome.find_element(:id, "tl19").text.should == "apple turtle"
+    end
+  end
+
+  describe "cat" do
+    it "should report to standard output" do
+      run("cat file39")
+      @chrome.find_element(:id, "tl19").text.should == "file39"
     end
   end
 
