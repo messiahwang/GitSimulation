@@ -52,7 +52,6 @@ prepareFileSystem = () ->
             # '.':      {}
             # '..':     {}
   window.current_location = "/home/bob"
-  console.log(window.file_system)
   assignUniqueIds()
   setCurrentAndParentReferences()
 
@@ -61,11 +60,9 @@ prepareFileSystem = () ->
 setCurrentAndParentReferences = () ->
   window.file_system['']['home']['..'] = window.file_system['/']
   crawl(window.file_system[''], '', (dir, dirname, entry) ->
-    console.log("#{dirname}<->#{entry}")
     if entry == '.'
       dir[entry] = dir
     if dir[entry]['_type'] == 'directory'
-      console.log(dir[entry])
       dir[entry]['..'] = dir if dir[entry]['..'] == undefined
   )
 
@@ -339,10 +336,10 @@ runCommandCd = (args) ->
 
 runCommandMkdir = (args) ->
   dir = retrieveDir()
-  makeDirectory(dir, entries)
+  makeDirectories(dir, args)
 
-makeDirectory = (dir, entries) ->
-  for entry in args
+makeDirectories = (dir, entries) ->
+  for entry in entries
     createDirectory(dir, entry) if dir[entry] == undefined
 
 runCommandTouch = (args) ->
@@ -433,9 +430,10 @@ shiftOutput = () ->
 #--------------- <Git> -----------
 runGitInit = (args) ->
   dir = retrieveDir()
-  makeDirectory(dir, ['.git'])
-  makeDirectory(dir['.git'], ['branches'])
-  dir['.git']['branches']['branches'] = ['master']
+  createDirectory(dir, '.git')
+  createDirectory(dir['.git'], 'branches')
+  # TEMPORARY. LATER SHOULD USE TEXT FILES
+  dir['.git']['branches']['_entries'].push 'master'
   dir['.git']['branches']['master']   = dir
 
 GITCOMMANDS =
@@ -481,6 +479,7 @@ extractTagName = (text) ->
 stringifyFileSystem = () ->
   accessed_table = {}
   hashify = (root = window.file_system['']) ->
+    console.log(root)
     accessed_table[root['_id']] = true
     result = $.extend({}, root)
     if root['_type'] == 'directory'

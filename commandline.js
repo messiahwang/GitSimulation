@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, addToDirectoryIndex, assignId, assignUniqueIds, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, makeDirectory, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, addToDirectoryIndex, assignId, assignUniqueIds, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, makeDirectories, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -35,19 +35,16 @@
       }
     };
     window.current_location = "/home/bob";
-    console.log(window.file_system);
     assignUniqueIds();
     return setCurrentAndParentReferences();
   };
   setCurrentAndParentReferences = function() {
     window.file_system['']['home']['..'] = window.file_system['/'];
     return crawl(window.file_system[''], '', function(dir, dirname, entry) {
-      console.log("" + dirname + "<->" + entry);
       if (entry === '.') {
         dir[entry] = dir;
       }
       if (dir[entry]['_type'] === 'directory') {
-        console.log(dir[entry]);
         if (dir[entry]['..'] === void 0) {
           return dir[entry]['..'] = dir;
         }
@@ -375,13 +372,13 @@
   runCommandMkdir = function(args) {
     var dir;
     dir = retrieveDir();
-    return makeDirectory(dir, entries);
+    return makeDirectories(dir, args);
   };
-  makeDirectory = function(dir, entries) {
+  makeDirectories = function(dir, entries) {
     var entry, _i, _len, _results;
     _results = [];
-    for (_i = 0, _len = args.length; _i < _len; _i++) {
-      entry = args[_i];
+    for (_i = 0, _len = entries.length; _i < _len; _i++) {
+      entry = entries[_i];
       _results.push(dir[entry] === void 0 ? createDirectory(dir, entry) : void 0);
     }
     return _results;
@@ -488,9 +485,9 @@
   runGitInit = function(args) {
     var dir;
     dir = retrieveDir();
-    makeDirectory(dir, ['.git']);
-    makeDirectory(dir['.git'], ['branches']);
-    dir['.git']['branches']['branches'] = ['master'];
+    createDirectory(dir, '.git');
+    createDirectory(dir['.git'], 'branches');
+    dir['.git']['branches']['_entries'].push('master');
     return dir['.git']['branches']['master'] = dir;
   };
   GITCOMMANDS = {
@@ -543,6 +540,7 @@
       if (root == null) {
         root = window.file_system[''];
       }
+      console.log(root);
       accessed_table[root['_id']] = true;
       result = $.extend({}, root);
       if (root['_type'] === 'directory') {

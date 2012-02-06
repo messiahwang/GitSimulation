@@ -20,7 +20,7 @@ describe "Git Spec" do
       retrieve_file_system
       @fs[:".git"].should_not == nil
       @fs[:_entries].include?('.git').should == true
-      @fs[:".git"][:branches][:branches].include?('master').should == true
+      @fs[:".git"][:branches][:_entries].include?('master').should == true
       @fs[:".git"][:branches][:master].should_not == nil
     end
   end

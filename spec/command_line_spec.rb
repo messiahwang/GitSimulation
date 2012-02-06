@@ -35,6 +35,19 @@ describe "GitSimulation" do
     end
   end
 
+  describe 'touch' do
+    it "should create all of these directories in the local path" do
+      run('mkdir a b c')
+      fs = retrieve_file_system()
+      fs[:_entries] && ['a', 'b', 'c'] == ['a', 'b', 'c']
+      [fs[:a], fs[:b], fs[:c]].each do |item|
+        item[:_type].should == 'directory'
+        item[:_entries].should == ['.', '..']
+        item[:_id].is_a?(Integer).should == true
+      end
+    end
+  end
+
   describe 'cd' do
     before :each do
       set_environment(@chrome, :extended)
