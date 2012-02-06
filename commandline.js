@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, addToDirectoryIndex, assignId, assignUniqueIds, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, makeDirectories, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, addToDirectoryIndex, assignId, assignUniqueIds, breakForLineBreaks, cleanLinks, crawl, createBranch, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getGitDir, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, listBranches, makeDirectories, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitBranch, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -488,10 +488,49 @@
     createDirectory(dir, '.git');
     createDirectory(dir['.git'], 'branches');
     dir['.git']['branches']['_entries'].push('master');
-    return dir['.git']['branches']['master'] = dir;
+    dir['.git']['branches']['master'] = dir;
+    return dir['.git']['branches']['_current'] = "master";
+  };
+  runGitBranch = function(args) {
+    if (args.length === 0) {
+      return listBranches();
+    } else {
+      return createBranch(arg[0]);
+    }
   };
   GITCOMMANDS = {
-    init: runGitInit
+    init: runGitInit,
+    branch: runGitBranch
+  };
+  listBranches = function() {
+    var current, entries, entry, git_dir, result, _i, _len;
+    git_dir = getGitDir();
+    if (git_dir === null) {
+      return;
+    }
+    entries = git_dir['branches']['_entries'];
+    current = git_dir['branches']['_current'];
+    result = "";
+    for (_i = 0, _len = entries.length; _i < _len; _i++) {
+      entry = entries[_i];
+      result += "" + (entry === current ? "* " : "  ") + entry + "\n";
+    }
+    print(result);
+    return git_dir;
+  };
+  createBranch = function(branch_name) {};
+  getGitDir = function(curr) {
+    if (curr == null) {
+      curr = retrieveDir();
+    }
+    if (curr['.git'] !== void 0) {
+      return curr['.git'];
+    } else if (curr === window.file_system['']) {
+      printLine("fatal: Not a git repository (or any of the parent directories): git");
+      return null;
+    } else {
+      return getGitDir(curr['..']);
+    }
   };
   cleanLinks = function(link) {
     link = link.replace(/\/[\.a-zA-z0-9]*\/\.\./, "").replace(/^\.*/, "");

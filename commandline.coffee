@@ -432,12 +432,45 @@ runGitInit = (args) ->
   dir = retrieveDir()
   createDirectory(dir, '.git')
   createDirectory(dir['.git'], 'branches')
-  # TEMPORARY. LATER SHOULD USE TEXT FILES
+  # Todo:
+  # Change usage to text files
   dir['.git']['branches']['_entries'].push 'master'
   dir['.git']['branches']['master']   = dir
+  dir['.git']['branches']['_current'] = "master"
+
+runGitBranch = (args) ->
+  if args.length == 0
+    listBranches()
+  else
+    createBranch(arg[0])
 
 GITCOMMANDS =
-  init: runGitInit
+  init:   runGitInit
+  branch: runGitBranch
+
+# Misc Git helprs
+listBranches = () ->
+  git_dir = getGitDir()
+  return if git_dir == null
+  entries = git_dir['branches']['_entries']
+  current = git_dir['branches']['_current']
+  result = ""
+  for entry in entries
+    result += "#{(if entry == current then "* " else "  ")}#{entry}\n"
+  print(result)
+  git_dir
+
+
+createBranch = (branch_name) ->
+
+getGitDir = (curr = retrieveDir()) ->
+  if curr['.git'] != undefined
+    curr['.git']
+  else if curr == window.file_system['']
+    printLine("fatal: Not a git repository (or any of the parent directories): git")
+    null
+  else
+    getGitDir(curr['..'])
 
 # -------------- <Misc> -----------
 

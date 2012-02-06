@@ -53,6 +53,15 @@ describe "Git Spec" do
       branch_path[:_entries].include?('garpley').should == true
       branch_path[:garpley].should_not == nil
     end
+
+    it "should not erase a preexisting branch" do
+      entry_count = retrieve_file_system[:".git"][:branches][:_entries].size
+      run('git branch dev')
+      retrieve_file_system
+      branch_path = @fs[:".git"][:branches]
+      branch_path[:_entries].size.should == entry_count
+      get_element_text('tl19').should == "fatal: A branch named 'dev' already exists."
+    end
   end
 
   describe "git checkout" do
