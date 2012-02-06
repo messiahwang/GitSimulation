@@ -25,12 +25,26 @@ describe "GitSimulation" do
   describe 'touch' do
     it "should create all of these files in the local path" do
       run('touch a b c')
-      run('ls')
       fs = retrieve_file_system()
       fs[:_entries] && ['a', 'b', 'c'] == ['a', 'b', 'c']
-      fs[:a].should == {:_type => 'file', :text => ""}
-      fs[:b].should == {:_type => 'file', :text => ""}
-      fs[:c].should == {:_type => 'file', :text => ""}
+      [fs[:a], fs[:b], fs[:c]].each do |item|
+        item[:_type].should == 'file'
+        item[:text].should == ""
+        item[:_id].is_a?(Integer).should == true
+      end
+    end
+  end
+
+  describe 'mkdir' do
+    it "should create all of these directories in the local path" do
+      run('mkdir a b c')
+      fs = retrieve_file_system()
+      fs[:_entries] && ['a', 'b', 'c'] == ['a', 'b', 'c']
+      [fs[:a], fs[:b], fs[:c]].each do |item|
+        item[:_type].should == 'directory'
+        item[:_entries].should == ['.', '..']
+        item[:_id].is_a?(Integer).should == true
+      end
     end
   end
 
@@ -77,6 +91,13 @@ describe "GitSimulation" do
     it "should annihilate spaces" do
       run("echo apple             turtle")
       @chrome.find_element(:id, "tl19").text.should == "apple turtle"
+    end
+  end
+
+  describe "cat" do
+    it "should report to standard output" do
+      run("cat file39")
+      @chrome.find_element(:id, "tl19").text.should == "file39"
     end
   end
 

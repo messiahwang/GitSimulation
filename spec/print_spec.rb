@@ -1,6 +1,6 @@
-# Tests the functionality of the command line
-# Non git functions
-# ls, cd, mkdir, touch, echo, mv
+# Tests output functionality
+# stdout
+# file output
 
 require_relative 'interaction_helper.rb'
 

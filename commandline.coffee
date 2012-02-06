@@ -3,6 +3,7 @@
 # <Input> for the handling of user keyboard input
 # <Output> standard or file output
 # <Command> for operations involving commands that a user runs
+# <Git> for operations involving git commands
 # <Misc> contains helper functions that are pretty low level/tinkery
 
 $(document).ready(() ->
@@ -22,15 +23,23 @@ $(document).ready(() ->
 # a file has text
 prepareFileSystem = () ->
   window.file_system =
+    top_id: 2
     '':
+      _id:      1
       _type:    'directory'
       _entries: ['.', '..', 'home']
+      # '.':      {}
+      # '..':     {}
       home:
         _type:    'directory'
         _entries: ['.', '..', 'bob']
+        # '.':      {}
+        # '..':     {}
         bob:
           _type:    'directory'
           _entries: ['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1']
+          # '.':      {}
+          # '..':     {}
           example_file_1:
             _type: 'file'
             text:  ""
@@ -40,7 +49,10 @@ prepareFileSystem = () ->
           example_directory_1:
             _type:    'directory'
             _entries: ['.', '..']
+            # '.':      {}
+            # '..':     {}
   window.current_location = "/home/bob"
+  assignUniqueIds()
   setCurrentAndParentReferences()
 
 # Makes all . point to the same directory
@@ -51,9 +63,19 @@ setCurrentAndParentReferences = () ->
     if entry == '.'
       dir[entry] = dir
     if dir[entry]['_type'] == 'directory'
-      false
       dir[entry]['..'] = dir if dir[entry]['..'] == undefined
   )
+
+assignUniqueIds = () ->
+  crawl(window.file_system[''], '', (dir, dirname, entry) ->
+    assignId(dir[entry]) if entry != '.' and entry != '..'
+    window.file_system.top_id += 1
+  )
+
+assignId = (dir) ->
+  dir['_id'] = window.file_system.top_id
+  window.file_system.top_id += 1
+  dir
 
 # Traverse the entire file system, applying the
 # given action function to all items
@@ -266,8 +288,11 @@ breakForLineBreaks = (message) ->
 
 runCommand = (command) ->
   args    = command.split(/\ +/)
+  runFromList(args, COMMANDS)
+
+runFromList = (args, list) ->
   command_name = args.shift()
-  command = COMMANDS[command_name]
+  command = list[command_name]
   if(command != undefined) then command(args) else unrecognizedCommand(command_name, args)
 
 unrecognizedCommand = (comm, args) ->
@@ -309,10 +334,12 @@ runCommandCd = (args) ->
   window.current_location   = cleanLinks(window.current_location)
   window.current_location
 
-
 runCommandMkdir = (args) ->
   dir = retrieveDir()
-  for entry in args
+  makeDirectories(dir, args)
+
+makeDirectories = (dir, entries) ->
+  for entry in entries
     createDirectory(dir, entry) if dir[entry] == undefined
 
 runCommandTouch = (args) ->
@@ -369,15 +396,21 @@ createDirectory = (dir, entry) ->
     _type:    'directory'
     _entries: ['.', '..']
   dir[entry]['.'] = dir
-  dir['_entries'].push(entry)
-  dir[entry]
+  addToDirectoryIndex(dir, entry)
 
 createFile = (dir, entry) ->
   dir[entry] =
     _type: 'file'
     text:  ""
+  addToDirectoryIndex(dir, entry)
+
+addToDirectoryIndex = (dir, entry) ->
+  assignId(dir[entry])
   dir['_entries'].push(entry)
   dir[entry]
+
+runCommandGit = (args) ->
+  runFromList(args, GITCOMMANDS)
 
 COMMANDS =
   ls:    runCommandLs
@@ -387,19 +420,31 @@ COMMANDS =
   echo:  runCommandEcho
   pwd:   runCommandPwd
   mv:    runCommandMv
+  git:   runCommandGit
 
 shiftOutput = () ->
   for i in [1..19]
     do (i) ->
       previous = $("#tl#{i + 1}").html()
       $("#tl#{i}").html(previous)
+#--------------- <Git> -----------
+runGitInit = (args) ->
+  dir = retrieveDir()
+  createDirectory(dir, '.git')
+  createDirectory(dir['.git'], 'branches')
+  # TEMPORARY. LATER SHOULD USE TEXT FILES
+  dir['.git']['branches']['_entries'].push 'master'
+  dir['.git']['branches']['master']   = dir
 
+GITCOMMANDS =
+  init: runGitInit
 
 # -------------- <Misc> -----------
 
 # This disgusts me.. live with it for now
 cleanLinks = (link) ->
-  link.replace(/\/[a-zA-z0-9]*\/\.\./, "").replace(/\/\./, "").replace(/^\.*/, "")
+  link = link.replace(/\/[\.a-zA-z0-9]*\/\.\./, "").replace(/^\.*/, "")
+  link.replace(/\/\.$/, "").replace(/\/\.\//, "/")
 
 stripTags = (message) ->
   message.replace(/(<([^>]+)>)/ig,"")
@@ -430,16 +475,17 @@ extractTagName = (text) ->
   if tag[0] != undefined then tag[0].tagName else "span"
 
 # This is in misc because it's really just for debugging
-# Makes json.. without the . or .. links
+# Makes json.. but with empty objects for upper referencing links
 stringifyFileSystem = () ->
+  accessed_table = {}
   hashify = (root = window.file_system['']) ->
+    console.log(root)
+    accessed_table[root['_id']] = true
     result = $.extend({}, root)
     if root['_type'] == 'directory'
-      root['.'] = {} if root['.'] != undefined
-      root['..'] = {} if root['..'] != undefined
       for entry in root['_entries']
-        continue if entry == '.' or entry == '..'
-        result[entry] = hashify(root[entry])
+        console.log(accessed_table)
+        result[entry] = if accessed_table[result[entry]['_id']] then {} else hashify(root[entry])
     result
   JSON.stringify(hashify())
 

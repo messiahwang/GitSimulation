@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, addToDirectoryIndex, assignId, assignUniqueIds, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, makeDirectories, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -7,7 +7,9 @@
   });
   prepareFileSystem = function() {
     window.file_system = {
+      top_id: 2,
       '': {
+        _id: 1,
         _type: 'directory',
         _entries: ['.', '..', 'home'],
         home: {
@@ -33,6 +35,7 @@
       }
     };
     window.current_location = "/home/bob";
+    assignUniqueIds();
     return setCurrentAndParentReferences();
   };
   setCurrentAndParentReferences = function() {
@@ -42,12 +45,24 @@
         dir[entry] = dir;
       }
       if (dir[entry]['_type'] === 'directory') {
-        false;
         if (dir[entry]['..'] === void 0) {
           return dir[entry]['..'] = dir;
         }
       }
     });
+  };
+  assignUniqueIds = function() {
+    return crawl(window.file_system[''], '', function(dir, dirname, entry) {
+      if (entry !== '.' && entry !== '..') {
+        assignId(dir[entry]);
+      }
+      return window.file_system.top_id += 1;
+    });
+  };
+  assignId = function(dir) {
+    dir['_id'] = window.file_system.top_id;
+    window.file_system.top_id += 1;
+    return dir;
   };
   crawl = function(current_dir, current_name, action) {
     var continue_crawl, entries, entry, _i, _len, _results;
@@ -296,10 +311,14 @@
     return false;
   };
   runCommand = function(command) {
-    var args, command_name;
+    var args;
     args = command.split(/\ +/);
+    return runFromList(args, COMMANDS);
+  };
+  runFromList = function(args, list) {
+    var command, command_name;
     command_name = args.shift();
-    command = COMMANDS[command_name];
+    command = list[command_name];
     if (command !== void 0) {
       return command(args);
     } else {
@@ -351,11 +370,15 @@
     return window.current_location;
   };
   runCommandMkdir = function(args) {
-    var dir, entry, _i, _len, _results;
+    var dir;
     dir = retrieveDir();
+    return makeDirectories(dir, args);
+  };
+  makeDirectories = function(dir, entries) {
+    var entry, _i, _len, _results;
     _results = [];
-    for (_i = 0, _len = args.length; _i < _len; _i++) {
-      entry = args[_i];
+    for (_i = 0, _len = entries.length; _i < _len; _i++) {
+      entry = entries[_i];
       _results.push(dir[entry] === void 0 ? createDirectory(dir, entry) : void 0);
     }
     return _results;
@@ -420,16 +443,22 @@
       _entries: ['.', '..']
     };
     dir[entry]['.'] = dir;
-    dir['_entries'].push(entry);
-    return dir[entry];
+    return addToDirectoryIndex(dir, entry);
   };
   createFile = function(dir, entry) {
     dir[entry] = {
       _type: 'file',
       text: ""
     };
+    return addToDirectoryIndex(dir, entry);
+  };
+  addToDirectoryIndex = function(dir, entry) {
+    assignId(dir[entry]);
     dir['_entries'].push(entry);
     return dir[entry];
+  };
+  runCommandGit = function(args) {
+    return runFromList(args, GITCOMMANDS);
   };
   COMMANDS = {
     ls: runCommandLs,
@@ -438,7 +467,8 @@
     touch: runCommandTouch,
     echo: runCommandEcho,
     pwd: runCommandPwd,
-    mv: runCommandMv
+    mv: runCommandMv,
+    git: runCommandGit
   };
   shiftOutput = function() {
     var i, _results;
@@ -452,8 +482,20 @@
     }
     return _results;
   };
+  runGitInit = function(args) {
+    var dir;
+    dir = retrieveDir();
+    createDirectory(dir, '.git');
+    createDirectory(dir['.git'], 'branches');
+    dir['.git']['branches']['_entries'].push('master');
+    return dir['.git']['branches']['master'] = dir;
+  };
+  GITCOMMANDS = {
+    init: runGitInit
+  };
   cleanLinks = function(link) {
-    return link.replace(/\/[a-zA-z0-9]*\/\.\./, "").replace(/\/\./, "").replace(/^\.*/, "");
+    link = link.replace(/\/[\.a-zA-z0-9]*\/\.\./, "").replace(/^\.*/, "");
+    return link.replace(/\/\.$/, "").replace(/\/\.\//, "/");
   };
   stripTags = function(message) {
     return message.replace(/(<([^>]+)>)/ig, "");
@@ -491,27 +533,22 @@
     }
   };
   stringifyFileSystem = function() {
-    var hashify;
+    var accessed_table, hashify;
+    accessed_table = {};
     hashify = function(root) {
       var entry, result, _i, _len, _ref;
       if (root == null) {
         root = window.file_system[''];
       }
+      console.log(root);
+      accessed_table[root['_id']] = true;
       result = $.extend({}, root);
       if (root['_type'] === 'directory') {
-        if (root['.'] !== void 0) {
-          root['.'] = {};
-        }
-        if (root['..'] !== void 0) {
-          root['..'] = {};
-        }
         _ref = root['_entries'];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           entry = _ref[_i];
-          if (entry === '.' || entry === '..') {
-            continue;
-          }
-          result[entry] = hashify(root[entry]);
+          console.log(accessed_table);
+          result[entry] = accessed_table[result[entry]['_id']] ? {} : hashify(root[entry]);
         }
       }
       return result;
