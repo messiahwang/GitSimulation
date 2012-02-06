@@ -122,11 +122,11 @@
   };
   updateCurrentInput = function() {
     var input_text;
-    input_text = substituteSpaces(retrieveInputLine());
+    input_text = substituteSpaces(retrieveInputLine(true));
     return $('#tl20').html(input_text);
   };
   substituteSpaces = function(input) {
-    return input.replace(/\ /g, "&nbsp;");
+    return input.replace(/\\{0} /g, "&nbsp;").replace(/\\{1}&nbsp;/g, " ");
   };
   handleReservedKey = function(keyCode) {
     return RESERVED_KEYS[keyCode]();
@@ -147,21 +147,24 @@
     printLine(extractInputLine());
     command = extractCurrentInput();
     runCommand(command);
+    window.readline['index'] = 0;
     return updateCurrentInput();
   };
   inputLeft = function() {
     window.readline['index'] -= 1;
     if (window.readline['index'] < 0) {
-      return window.readline['index'] = 0;
+      window.readline['index'] = 0;
     }
+    return updateCurrentInput();
   };
   inputRight = function() {
     var input_length;
     input_length = window.readline['input'].length;
     window.readline['index'] += 1;
     if (window.readline['index'] > input_length) {
-      return window.readline['index'] = input_length;
+      window.readline['index'] = input_length;
     }
+    return updateCurrentInput();
   };
   RESERVED_KEYS = {
     8: inputBackspace,
@@ -170,10 +173,18 @@
     39: inputRight
   };
   window.reserved = RESERVED_KEYS;
-  retrieveInputLine = function() {
-    var ps1;
+  retrieveInputLine = function(use_index) {
+    var index, input_text, ps1;
+    if (use_index == null) {
+      use_index = false;
+    }
+    index = window.readline['index'];
+    input_text = "" + window.readline['input'] + " ";
+    if (use_index) {
+      input_text = "" + (input_text.slice(0, index)) + "<span\\ id=\"readline_cursor\">" + input_text[index] + "</span>" + (input_text.slice(index + 1));
+    }
     ps1 = window.current_location;
-    return "" + ps1 + "$ " + window.readline['input'];
+    return "" + ps1 + "$ " + input_text;
   };
   extractInputLine = function() {
     var result;

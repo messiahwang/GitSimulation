@@ -115,11 +115,11 @@ injectToInput = (character) ->
   updateCurrentInput()
 
 updateCurrentInput = () ->
-  input_text = substituteSpaces(retrieveInputLine())
+  input_text = substituteSpaces(retrieveInputLine(true))
   $('#tl20').html(input_text)
 
 substituteSpaces = (input) ->
-  input.replace(/\ /g, "&nbsp;")
+  input.replace(/\\{0} /g, "&nbsp;").replace(/\\{1}&nbsp;/g, " ")
 
 handleReservedKey = (keyCode) ->
   RESERVED_KEYS[keyCode]()
@@ -137,16 +137,19 @@ inputEnter = () ->
   printLine(extractInputLine())
   command = extractCurrentInput()
   runCommand(command)
+  window.readline['index'] = 0
   updateCurrentInput()
 
 inputLeft = () ->
   window.readline['index'] -= 1
   window.readline['index']  = 0 if window.readline['index'] < 0
+  updateCurrentInput()
 
 inputRight = () ->
   input_length = window.readline['input'].length
   window.readline['index'] += 1
   window.readline['index']  = input_length if window.readline['index'] > input_length
+  updateCurrentInput()
 
 RESERVED_KEYS =
   8:  inputBackspace
@@ -157,9 +160,13 @@ window.reserved = RESERVED_KEYS
 
 # ------------- Misc input stuff ---------------
 
-retrieveInputLine = () ->
+retrieveInputLine = (use_index = false) ->
+  index      = window.readline['index']
+  input_text = "#{window.readline['input']} "
+  if use_index
+    input_text = "#{input_text.slice(0, index)}<span\\ id=\"readline_cursor\">#{input_text[index]}</span>#{input_text.slice(index + 1)}"
   ps1 = window.current_location
-  "#{ps1}$ #{window.readline['input']}"
+  "#{ps1}$ #{input_text}"
 
 extractInputLine = () ->
   result = retrieveInputLine()

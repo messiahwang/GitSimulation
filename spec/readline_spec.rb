@@ -42,6 +42,13 @@ describe "readline" do
       @readline_data['input'].should == "12345"
       @readline_data['index'].should == 0
     end
+
+    it "should reset after sending the command in" do
+      send_keys("12345")
+      send_keys(:enter)
+      get_readline_data
+      @readline_data['index'].should == 0
+    end
   end
 
   describe "left/right arrows" do
