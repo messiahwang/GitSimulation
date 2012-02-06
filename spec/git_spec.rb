@@ -24,4 +24,5 @@ describe "Git Spec" do
       @fs[:".git"][:branches][:master].should_not == nil
     end
   end
+
 end
