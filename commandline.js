@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -150,6 +150,28 @@
     window.readline['index'] = 0;
     return updateCurrentInput();
   };
+  inputTab = function() {
+    var entry, last_arg, possibility, text, _i, _len, _ref;
+    text = window.readline['input'];
+    last_arg = text.substring(text.lastIndexOf(" ") + 1);
+    possibility = null;
+    _ref = accessDirectory(window.current_location)['_entries'];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      entry = _ref[_i];
+      if (entry.indexOf(last_arg) === 0) {
+        if (possibility !== null) {
+          possibility = false;
+        } else {
+          possibility = entry;
+        }
+      }
+    }
+    if (possibility !== null && possibility !== false) {
+      window.readline['input'] = "" + (text.substring(0, text.lastIndexOf(" ") + 1)) + possibility;
+      window.readline['index'] = window.readline['input'].length;
+    }
+    return updateCurrentInput();
+  };
   inputLeft = function() {
     window.readline['index'] -= 1;
     if (window.readline['index'] < 0) {
@@ -170,7 +192,8 @@
     8: inputBackspace,
     13: inputEnter,
     37: inputLeft,
-    39: inputRight
+    39: inputRight,
+    9: inputTab
   };
   window.reserved = RESERVED_KEYS;
   retrieveInputLine = function(use_index) {

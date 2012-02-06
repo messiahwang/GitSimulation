@@ -83,4 +83,34 @@ describe "readline" do
       @readline_data['index'].should == 5
     end
   end
+
+  describe "autocomplete" do
+    it "should autocomplete my text if theres only one option" do
+      send_keys("file3")
+      send_keys(:tab)
+      get_readline_data
+      @readline_data['input'].should == "file39"
+    end
+
+    it "should autocomplete my text with a command prepending it" do
+      send_keys("cd file3")
+      send_keys(:tab)
+      get_readline_data
+      @readline_data['input'].should == "cd file39"
+    end
+
+    it "should autocomplete my most current argument" do
+      send_keys("asd sdf sdf sdf file3")
+      send_keys(:tab)
+      get_readline_data
+      @readline_data['input'].should == "asd sdf sdf sdf file39"
+    end
+
+    it "should not autocomplete if there are multiple options" do
+      send_keys("file")
+      send_keys(:tab)
+      get_readline_data
+      @readline_data['input'].should == "file"
+    end
+  end
 end

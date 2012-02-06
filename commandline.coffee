@@ -125,6 +125,8 @@ handleReservedKey = (keyCode) ->
   RESERVED_KEYS[keyCode]()
 
 # Individual functions for each reserved key
+
+# Delete character at cursor
 inputBackspace = () ->
   text  = window.readline['input']
   index = window.readline['index']
@@ -133,6 +135,7 @@ inputBackspace = () ->
   window.readline['index'] -= 1
   updateCurrentInput()
 
+# Submit command to be run
 inputEnter = () ->
   printLine(extractInputLine())
   command = extractCurrentInput()
@@ -140,11 +143,29 @@ inputEnter = () ->
   window.readline['index'] = 0
   updateCurrentInput()
 
+# Tab autocomplete
+inputTab = () ->
+  text = window.readline['input']
+  last_arg = text.substring(text.lastIndexOf(" ") + 1)
+  possibility = null
+  for entry in accessDirectory(window.current_location)['_entries']
+    if entry.indexOf(last_arg) == 0
+      if possibility != null
+        possibility = false
+      else
+        possibility = entry
+  if possibility != null and possibility != false
+    window.readline['input'] = "#{text.substring(0, text.lastIndexOf(" ") + 1)}#{possibility}"
+    window.readline['index'] = window.readline['input'].length
+  updateCurrentInput()
+
+# Move cursor left
 inputLeft = () ->
   window.readline['index'] -= 1
   window.readline['index']  = 0 if window.readline['index'] < 0
   updateCurrentInput()
 
+# Move cursor right
 inputRight = () ->
   input_length = window.readline['input'].length
   window.readline['index'] += 1
@@ -156,6 +177,7 @@ RESERVED_KEYS =
   13: inputEnter
   37: inputLeft
   39: inputRight
+  9:  inputTab
 window.reserved = RESERVED_KEYS
 
 # ------------- Misc input stuff ---------------
