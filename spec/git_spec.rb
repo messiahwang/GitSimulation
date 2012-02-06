@@ -15,11 +15,13 @@ describe "Git Spec" do
   end
 
   describe "git init" do
-    it "should turn create a .git directory" do
+    it "should turn create a .git directory with master referenced in branches" do
       run('git init')
       retrieve_file_system
       @fs[:".git"].should_not == nil
       @fs[:_entries].include?('.git').should == true
+      @fs[:".git"][:branches][:branches].include?('master').should == true
+      @fs[:".git"][:branches][:master].should_not == nil
     end
   end
 end

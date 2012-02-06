@@ -25,12 +25,13 @@ describe "GitSimulation" do
   describe 'touch' do
     it "should create all of these files in the local path" do
       run('touch a b c')
-      run('ls')
       fs = retrieve_file_system()
       fs[:_entries] && ['a', 'b', 'c'] == ['a', 'b', 'c']
-      fs[:a].should == {:_type => 'file', :text => ""}
-      fs[:b].should == {:_type => 'file', :text => ""}
-      fs[:c].should == {:_type => 'file', :text => ""}
+      [fs[:a], fs[:b], fs[:c]].each do |item|
+        item[:_type].should == 'file'
+        item[:text].should == ""
+        item[:_id].is_a?(Integer).should == true
+      end
     end
   end
 

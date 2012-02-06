@@ -23,15 +23,23 @@ $(document).ready(() ->
 # a file has text
 prepareFileSystem = () ->
   window.file_system =
+    top_id: 2
     '':
+      _id:      1
       _type:    'directory'
       _entries: ['.', '..', 'home']
+      # '.':      {}
+      # '..':     {}
       home:
         _type:    'directory'
         _entries: ['.', '..', 'bob']
+        # '.':      {}
+        # '..':     {}
         bob:
           _type:    'directory'
           _entries: ['.', '..', 'example_file_1', 'example_file_2', 'example_directory_1']
+          # '.':      {}
+          # '..':     {}
           example_file_1:
             _type: 'file'
             text:  ""
@@ -41,7 +49,11 @@ prepareFileSystem = () ->
           example_directory_1:
             _type:    'directory'
             _entries: ['.', '..']
+            # '.':      {}
+            # '..':     {}
   window.current_location = "/home/bob"
+  console.log(window.file_system)
+  assignUniqueIds()
   setCurrentAndParentReferences()
 
 # Makes all . point to the same directory
@@ -49,12 +61,24 @@ prepareFileSystem = () ->
 setCurrentAndParentReferences = () ->
   window.file_system['']['home']['..'] = window.file_system['/']
   crawl(window.file_system[''], '', (dir, dirname, entry) ->
+    console.log("#{dirname}<->#{entry}")
     if entry == '.'
       dir[entry] = dir
     if dir[entry]['_type'] == 'directory'
-      false
+      console.log(dir[entry])
       dir[entry]['..'] = dir if dir[entry]['..'] == undefined
   )
+
+assignUniqueIds = () ->
+  crawl(window.file_system[''], '', (dir, dirname, entry) ->
+    assignId(dir[entry]) if entry != '.' and entry != '..'
+    window.file_system.top_id += 1
+  )
+
+assignId = (dir) ->
+  dir['_id'] = window.file_system.top_id
+  window.file_system.top_id += 1
+  dir
 
 # Traverse the entire file system, applying the
 # given action function to all items
@@ -313,9 +337,11 @@ runCommandCd = (args) ->
   window.current_location   = cleanLinks(window.current_location)
   window.current_location
 
-
 runCommandMkdir = (args) ->
   dir = retrieveDir()
+  makeDirectory(dir, entries)
+
+makeDirectory = (dir, entries) ->
   for entry in args
     createDirectory(dir, entry) if dir[entry] == undefined
 
@@ -373,13 +399,16 @@ createDirectory = (dir, entry) ->
     _type:    'directory'
     _entries: ['.', '..']
   dir[entry]['.'] = dir
-  dir['_entries'].push(entry)
-  dir[entry]
+  addToDirectoryIndex(dir, entry)
 
 createFile = (dir, entry) ->
   dir[entry] =
     _type: 'file'
     text:  ""
+  addToDirectoryIndex(dir, entry)
+
+addToDirectoryIndex = (dir, entry) ->
+  assignId(dir[entry])
   dir['_entries'].push(entry)
   dir[entry]
 
@@ -403,7 +432,11 @@ shiftOutput = () ->
       $("#tl#{i}").html(previous)
 #--------------- <Git> -----------
 runGitInit = (args) ->
-  runCommandMkdir([".git"])
+  dir = retrieveDir()
+  makeDirectory(dir, ['.git'])
+  makeDirectory(dir['.git'], ['branches'])
+  dir['.git']['branches']['branches'] = ['master']
+  dir['.git']['branches']['master']   = dir
 
 GITCOMMANDS =
   init: runGitInit
@@ -444,16 +477,16 @@ extractTagName = (text) ->
   if tag[0] != undefined then tag[0].tagName else "span"
 
 # This is in misc because it's really just for debugging
-# Makes json.. without the . or .. links
+# Makes json.. but with empty objects for upper referencing links
 stringifyFileSystem = () ->
+  accessed_table = {}
   hashify = (root = window.file_system['']) ->
+    accessed_table[root['_id']] = true
     result = $.extend({}, root)
     if root['_type'] == 'directory'
-      root['.'] = {} if root['.'] != undefined
-      root['..'] = {} if root['..'] != undefined
       for entry in root['_entries']
-        continue if entry == '.' or entry == '..'
-        result[entry] = hashify(root[entry])
+        console.log(accessed_table)
+        result[entry] = if accessed_table[result[entry]['_id']] then {} else hashify(root[entry])
     result
   JSON.stringify(hashify())
 
