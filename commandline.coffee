@@ -3,6 +3,7 @@
 # <Input> for the handling of user keyboard input
 # <Output> standard or file output
 # <Command> for operations involving commands that a user runs
+# <Git> for operations involving git commands
 # <Misc> contains helper functions that are pretty low level/tinkery
 
 $(document).ready(() ->
@@ -266,8 +267,11 @@ breakForLineBreaks = (message) ->
 
 runCommand = (command) ->
   args    = command.split(/\ +/)
+  runFromList(args, COMMANDS)
+
+runFromList = (args, list) ->
   command_name = args.shift()
-  command = COMMANDS[command_name]
+  command = list[command_name]
   if(command != undefined) then command(args) else unrecognizedCommand(command_name, args)
 
 unrecognizedCommand = (comm, args) ->
@@ -379,6 +383,9 @@ createFile = (dir, entry) ->
   dir['_entries'].push(entry)
   dir[entry]
 
+runCommandGit = (args) ->
+  runFromList(args, GITCOMMANDS)
+
 COMMANDS =
   ls:    runCommandLs
   cd:    runCommandCd
@@ -387,19 +394,26 @@ COMMANDS =
   echo:  runCommandEcho
   pwd:   runCommandPwd
   mv:    runCommandMv
+  git:   runCommandGit
 
 shiftOutput = () ->
   for i in [1..19]
     do (i) ->
       previous = $("#tl#{i + 1}").html()
       $("#tl#{i}").html(previous)
+#--------------- <Git> -----------
+runGitInit = (args) ->
+  runCommandMkdir([".git"])
 
+GITCOMMANDS =
+  init: runGitInit
 
 # -------------- <Misc> -----------
 
 # This disgusts me.. live with it for now
 cleanLinks = (link) ->
-  link.replace(/\/[a-zA-z0-9]*\/\.\./, "").replace(/\/\./, "").replace(/^\.*/, "")
+  link = link.replace(/\/[\.a-zA-z0-9]*\/\.\./, "").replace(/^\.*/, "")
+  link.replace(/\/\.$/, "").replace(/\/\.\//, "/")
 
 stripTags = (message) ->
   message.replace(/(<([^>]+)>)/ig,"")

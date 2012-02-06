@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -296,10 +296,14 @@
     return false;
   };
   runCommand = function(command) {
-    var args, command_name;
+    var args;
     args = command.split(/\ +/);
+    return runFromList(args, COMMANDS);
+  };
+  runFromList = function(args, list) {
+    var command, command_name;
     command_name = args.shift();
-    command = COMMANDS[command_name];
+    command = list[command_name];
     if (command !== void 0) {
       return command(args);
     } else {
@@ -431,6 +435,9 @@
     dir['_entries'].push(entry);
     return dir[entry];
   };
+  runCommandGit = function(args) {
+    return runFromList(args, GITCOMMANDS);
+  };
   COMMANDS = {
     ls: runCommandLs,
     cd: runCommandCd,
@@ -438,7 +445,8 @@
     touch: runCommandTouch,
     echo: runCommandEcho,
     pwd: runCommandPwd,
-    mv: runCommandMv
+    mv: runCommandMv,
+    git: runCommandGit
   };
   shiftOutput = function() {
     var i, _results;
@@ -452,8 +460,15 @@
     }
     return _results;
   };
+  runGitInit = function(args) {
+    return runCommandMkdir([".git"]);
+  };
+  GITCOMMANDS = {
+    init: runGitInit
+  };
   cleanLinks = function(link) {
-    return link.replace(/\/[a-zA-z0-9]*\/\.\./, "").replace(/\/\./, "").replace(/^\.*/, "");
+    link = link.replace(/\/[\.a-zA-z0-9]*\/\.\./, "").replace(/^\.*/, "");
+    return link.replace(/\/\.$/, "").replace(/\/\.\//, "/");
   };
   stripTags = function(message) {
     return message.replace(/(<([^>]+)>)/ig, "");
