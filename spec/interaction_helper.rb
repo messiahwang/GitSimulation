@@ -70,8 +70,9 @@ module BrowserShortcuts
     @browser.execute_script(script)
   end
 
-  def retrieve_file_system
-    @fs = JSON.parse(@browser.execute_script(%Q[return fsStringify();]), :symbolize_names => true)
+  def retrieve_file_system(location = nil)
+    script = (location.nil? ? 'return fsStringify();' : "return fsStringify(#{location});")
+    @fs = JSON.parse(@browser.execute_script(script), :symbolize_names => true)
   end
 
   def get_element_text(id)

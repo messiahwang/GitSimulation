@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, addToDirectoryIndex, assignId, assignUniqueIds, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, makeDirectories, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, GITCOMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, addToDirectoryIndex, assignId, assignUniqueIds, breakForLineBreaks, cleanLinks, cloneFileSystem, crawl, createBranch, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getGitDir, getIntersection, getLinkName, handleKeyPress, handleReservedKey, hashFileSystem, hashNonLinkData, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, listBranches, makeDirectories, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, replaceDummyNodes, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandGit, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, runFromList, runGitBranch, runGitCheckout, runGitInit, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -437,6 +437,9 @@
     return accessDirectory(window.current_location);
   };
   createDirectory = function(dir, entry) {
+    if (dir[entry] !== void 0) {
+      return false;
+    }
     dir[entry] = {
       '..': dir,
       _type: 'directory',
@@ -483,15 +486,116 @@
     return _results;
   };
   runGitInit = function(args) {
-    var dir;
+    var branch_dir, dir;
     dir = retrieveDir();
-    createDirectory(dir, '.git');
+    if (!createDirectory(dir, '.git')) {
+      printLine("Reinitialized existing Git repository in " + window.current_location + "/.git/");
+      return;
+    }
+    printLine("Initialized empty Git repository in " + window.current_location + "/.git/");
     createDirectory(dir['.git'], 'branches');
-    dir['.git']['branches']['_entries'].push('master');
-    return dir['.git']['branches']['master'] = dir;
+    branch_dir = dir['.git']['branches'];
+    branch_dir['_branches'] = [];
+    branch_dir['master'] = dir;
+    branch_dir['_current'] = "master";
+    branch_dir['_entries'].push('master');
+    return branch_dir['_branches'].push('master');
+  };
+  runGitBranch = function(args) {
+    var result;
+    if (args.length === 0) {
+      return listBranches();
+    } else {
+      result = createBranch(args[0]);
+      if (result === false) {
+        return printLine("fatal: A branch named '" + args[0] + "' already exists.");
+      }
+    }
+  };
+  runGitCheckout = function(args) {
+    var branch_dir, git_dir, pre_root_dir, pre_root_name, target_branch, target_branch_name;
+    git_dir = getGitDir();
+    if (args.length === 0 || git_dir === null) {
+      return;
+    }
+    target_branch_name = args[0];
+    branch_dir = git_dir['branches'];
+    if (branch_dir['_entries'].indexOf(target_branch_name) !== -1) {
+      target_branch = branch_dir[target_branch_name];
+      branch_dir['_current'] = target_branch_name;
+      pre_root_dir = git_dir['..']['..'];
+      pre_root_name = getLinkName(pre_root_dir, git_dir['..']);
+      pre_root_dir[pre_root_name] = target_branch;
+      target_branch['..'] = pre_root_dir;
+      return git_dir['..'] = target_branch;
+    }
   };
   GITCOMMANDS = {
-    init: runGitInit
+    init: runGitInit,
+    branch: runGitBranch,
+    checkout: runGitCheckout
+  };
+  listBranches = function() {
+    var current, entries, entry, git_dir, result, _i, _len;
+    git_dir = getGitDir();
+    if (git_dir === null) {
+      return;
+    }
+    entries = git_dir['branches']['_branches'];
+    current = git_dir['branches']['_current'];
+    result = "";
+    for (_i = 0, _len = entries.length; _i < _len; _i++) {
+      entry = entries[_i];
+      result += "" + (entry === current ? "* " : "  ") + entry + "\n";
+    }
+    print(result);
+    return git_dir;
+  };
+  createBranch = function(branch_name) {
+    var branch_dir, git_dir, new_branch;
+    git_dir = getGitDir();
+    if (git_dir === null) {
+      return;
+    }
+    if (git_dir['branches']['_entries'].indexOf(branch_name) !== -1) {
+      return false;
+    }
+    new_branch = cloneFileSystem(git_dir['..']);
+    new_branch['.git'] = git_dir;
+    branch_dir = git_dir['branches'];
+    branch_dir['_entries'].push(branch_name);
+    branch_dir['_branches'].push(branch_name);
+    branch_dir[branch_name] = new_branch;
+    return true;
+  };
+  getGitDir = function(curr) {
+    if (curr == null) {
+      curr = retrieveDir();
+    }
+    if (curr['.git'] !== void 0) {
+      return curr['.git'];
+    } else if (curr === window.file_system['']) {
+      printLine("fatal: Not a git repository (or any of the parent directories): git");
+      return null;
+    } else {
+      return getGitDir(curr['..']);
+    }
+  };
+  getLinkName = function(parent, dir) {
+    var entry, _i, _len, _ref;
+    console.log(parent);
+    console.log(dir);
+    if (parent === window.file_system) {
+      return '';
+    }
+    _ref = parent['_entries'];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      entry = _ref[_i];
+      if (parent[entry] === dir) {
+        return entry;
+      }
+    }
+    return null;
   };
   cleanLinks = function(link) {
     link = link.replace(/\/[\.a-zA-z0-9]*\/\.\./, "").replace(/^\.*/, "");
@@ -532,28 +636,65 @@
       return "span";
     }
   };
-  stringifyFileSystem = function() {
-    var accessed_table, hashify;
-    accessed_table = {};
-    hashify = function(root) {
-      var entry, result, _i, _len, _ref;
-      if (root == null) {
-        root = window.file_system[''];
-      }
-      console.log(root);
-      accessed_table[root['_id']] = true;
-      result = $.extend({}, root);
-      if (root['_type'] === 'directory') {
-        _ref = root['_entries'];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          entry = _ref[_i];
-          console.log(accessed_table);
-          result[entry] = accessed_table[result[entry]['_id']] ? {} : hashify(root[entry]);
-        }
-      }
-      return result;
-    };
-    return JSON.stringify(hashify());
+  stringifyFileSystem = function(root) {
+    if (root == null) {
+      root = window.file_system[''];
+    }
+    return JSON.stringify(hashFileSystem(root));
   };
   window.fsStringify = stringifyFileSystem;
+  hashFileSystem = function(root, accessed_table) {
+    var entry, result, _i, _len, _ref;
+    if (root == null) {
+      root = window.file_system[''];
+    }
+    if (accessed_table == null) {
+      accessed_table = {};
+    }
+    result = $.extend({}, root);
+    hashNonLinkData(result);
+    accessed_table[root['_id']] = result;
+    if (root['_type'] === 'directory') {
+      _ref = root['_entries'];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        entry = _ref[_i];
+        result[entry] = accessed_table[result[entry]['_id']] ? {
+          '_id': result[entry]['_id'],
+          '_type': 'dummy'
+        } : hashFileSystem(root[entry], accessed_table);
+      }
+    }
+    return result;
+  };
+  hashNonLinkData = function(root) {
+    if (root['_entries']) {
+      return root['_entries'] = root['_entries'].slice(0);
+    }
+  };
+  cloneFileSystem = function(root) {
+    var clone, reference_table;
+    if (root == null) {
+      root = window.file_system[''];
+    }
+    reference_table = {};
+    clone = hashFileSystem(root, reference_table);
+    return replaceDummyNodes(clone, reference_table);
+  };
+  replaceDummyNodes = function(root, reference_table) {
+    var entry, _i, _len, _ref;
+    if (root['_type'] === 'directory') {
+      _ref = root['_entries'];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        entry = _ref[_i];
+        if (root[entry]['_type'] === 'dummy') {
+          root[entry] = reference_table[root[entry]['_id']];
+        } else {
+          replaceDummyNodes(root[entry], reference_table);
+        }
+      }
+    }
+    return root;
+  };
+  window.fsHash = hashFileSystem;
+  window.fsClone = cloneFileSystem;
 }).call(this);
