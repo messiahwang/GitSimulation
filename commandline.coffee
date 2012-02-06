@@ -66,8 +66,6 @@ crawl = (current_dir = window.file_system[''], current_name, action = null) ->
     continue_crawl = continue_crawl and current_dir[entry][current_name] != current_dir
     crawl(current_dir[entry], entry, action) if continue_crawl
 
-window.crawl = crawl
-
 accessDirectory = (pathname) ->
   paths = pathname.split("/")
   paths.shift()
@@ -75,10 +73,6 @@ accessDirectory = (pathname) ->
   for path in paths
     current_spot = current_spot[path]
   current_spot
-
-
-window.accessDirectory = accessDirectory
-
 
 # --------------- User <Input> Stuff -------------
 
@@ -147,15 +141,13 @@ inputEnter = () ->
 inputTab = () ->
   text = window.readline['input']
   last_arg = text.substring(text.lastIndexOf(" ") + 1)
-  possibility = null
+  possibilities = []
   for entry in accessDirectory(window.current_location)['_entries']
     if entry.indexOf(last_arg) == 0
-      if possibility != null
-        possibility = false
-      else
-        possibility = entry
-  if possibility != null and possibility != false
-    window.readline['input'] = "#{text.substring(0, text.lastIndexOf(" ") + 1)}#{possibility}"
+      possibilities.push(entry)
+  intersect = getIntersection(possibilities)
+  if intersect
+    window.readline['input'] = "#{text.substring(0, text.lastIndexOf(" ") + 1)}#{intersect}"
     window.readline['index'] = window.readline['input'].length
   updateCurrentInput()
 
@@ -178,7 +170,6 @@ RESERVED_KEYS =
   37: inputLeft
   39: inputRight
   9:  inputTab
-window.reserved = RESERVED_KEYS
 
 # ------------- Misc input stuff ---------------
 
@@ -199,6 +190,20 @@ extractCurrentInput = () ->
   command = window.readline['input']
   window.readline['input'] = ""
   command
+
+getIntersection = (inputs) ->
+  if inputs.length == 0
+    return inputs[0]
+  maxlength = Math.min.apply(Math, inputs.map((inp) -> inp.length))
+  result = ""
+  for i in [0...maxlength]
+    letters = inputs.map((inp) -> inp[i])
+    for j in [1...(letters.length)]
+      if letters[0] == letters[j]
+      else
+        return result
+    result += letters[0]
+  result
 
 ## -------- End of User Input Stuff --------------
 # --------- <Output> Stuff ----------------------
@@ -257,10 +262,6 @@ breakForLineBreaks = (message) ->
   print(back)
   false
 
-
-window.print  = print
-window.printL = printLine
-
 #------------- <Command> stuff --------------------
 
 runCommand = (command) ->
@@ -268,8 +269,6 @@ runCommand = (command) ->
   command_name = args.shift()
   command = COMMANDS[command_name]
   if(command != undefined) then command(args) else unrecognizedCommand(command_name, args)
-
-window.runCommand = runCommand
 
 unrecognizedCommand = (comm, args) ->
   printLine("#{comm}: command not found")
@@ -298,16 +297,18 @@ runCommandCd = (args) ->
         window.current_location = "#{window.current_location}/#{target}"
         dir = dir[target]
       else
-        printL("cd: #{args[0]}: Not a directory")
+        printLine("cd: #{args[0]}: Not a directory")
         failure = true
         break
     else
-      printL("cd: #{args[0]}: No such file or directory")
+      printLine("cd: #{args[0]}: No such file or directory")
       failure = true
       break
   if failure
     window.current_location = original_location
+  window.current_location   = cleanLinks(window.current_location)
   window.current_location
+
 
 runCommandMkdir = (args) ->
   dir = retrieveDir()
@@ -343,7 +344,7 @@ runCommandMv = (args) ->
       new_dir = old_dir[target]
       target_name = entry
     else
-      printL("mv: target `#{target}' is not a directory")
+      printLine("mv: target `#{target}' is not a directory")
       return
   else
     target_name = target
@@ -396,6 +397,10 @@ shiftOutput = () ->
 
 # -------------- <Misc> -----------
 
+# This disgusts me.. live with it for now
+cleanLinks = (link) ->
+  link.replace(/\/[a-zA-z0-9]*\/\.\./, "").replace(/\/\./, "").replace(/^\.*/, "")
+
 stripTags = (message) ->
   message.replace(/(<([^>]+)>)/ig,"")
 
@@ -438,7 +443,4 @@ stringifyFileSystem = () ->
     result
   JSON.stringify(hashify())
 
-window.retrieve_input_line = retrieveInputLine
-window.pair = pairWordsAndTags
-window.zip = zipWordsAndTags
 window.fsStringify = stringifyFileSystem

@@ -112,5 +112,12 @@ describe "readline" do
       get_readline_data
       @readline_data['input'].should == "file"
     end
+
+    it "should autocomplete what it can" do
+      send_keys("f")
+      send_keys(:tab)
+      get_readline_data
+      @readline_data['input'].should == "file"
+    end
   end
 end

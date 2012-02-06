@@ -1,5 +1,5 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, cleanLinks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, getIntersection, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, inputTab, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
@@ -71,7 +71,6 @@
     }
     return _results;
   };
-  window.crawl = crawl;
   accessDirectory = function(pathname) {
     var current_spot, path, paths, _i, _len;
     paths = pathname.split("/");
@@ -83,7 +82,6 @@
     }
     return current_spot;
   };
-  window.accessDirectory = accessDirectory;
   prepareReadline = function() {
     window.readline = {
       input: "",
@@ -151,23 +149,20 @@
     return updateCurrentInput();
   };
   inputTab = function() {
-    var entry, last_arg, possibility, text, _i, _len, _ref;
+    var entry, intersect, last_arg, possibilities, text, _i, _len, _ref;
     text = window.readline['input'];
     last_arg = text.substring(text.lastIndexOf(" ") + 1);
-    possibility = null;
+    possibilities = [];
     _ref = accessDirectory(window.current_location)['_entries'];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       entry = _ref[_i];
       if (entry.indexOf(last_arg) === 0) {
-        if (possibility !== null) {
-          possibility = false;
-        } else {
-          possibility = entry;
-        }
+        possibilities.push(entry);
       }
     }
-    if (possibility !== null && possibility !== false) {
-      window.readline['input'] = "" + (text.substring(0, text.lastIndexOf(" ") + 1)) + possibility;
+    intersect = getIntersection(possibilities);
+    if (intersect) {
+      window.readline['input'] = "" + (text.substring(0, text.lastIndexOf(" ") + 1)) + intersect;
       window.readline['index'] = window.readline['input'].length;
     }
     return updateCurrentInput();
@@ -195,7 +190,6 @@
     39: inputRight,
     9: inputTab
   };
-  window.reserved = RESERVED_KEYS;
   retrieveInputLine = function(use_index) {
     var index, input_text, ps1;
     if (use_index == null) {
@@ -220,6 +214,28 @@
     command = window.readline['input'];
     window.readline['input'] = "";
     return command;
+  };
+  getIntersection = function(inputs) {
+    var i, j, letters, maxlength, result, _ref;
+    if (inputs.length === 0) {
+      return inputs[0];
+    }
+    maxlength = Math.min.apply(Math, inputs.map(function(inp) {
+      return inp.length;
+    }));
+    result = "";
+    for (i = 0; 0 <= maxlength ? i < maxlength : i > maxlength; 0 <= maxlength ? i++ : i--) {
+      letters = inputs.map(function(inp) {
+        return inp[i];
+      });
+      for (j = 1, _ref = letters.length; 1 <= _ref ? j < _ref : j > _ref; 1 <= _ref ? j++ : j--) {
+        if (letters[0] === letters[j]) {} else {
+          return result;
+        }
+      }
+      result += letters[0];
+    }
+    return result;
   };
   TERMINAL_WIDTH = 80;
   print = function(message) {
@@ -279,8 +295,6 @@
     print(back);
     return false;
   };
-  window.print = print;
-  window.printL = printLine;
   runCommand = function(command) {
     var args, command_name;
     args = command.split(/\ +/);
@@ -292,7 +306,6 @@
       return unrecognizedCommand(command_name, args);
     }
   };
-  window.runCommand = runCommand;
   unrecognizedCommand = function(comm, args) {
     return printLine("" + comm + ": command not found");
   };
@@ -321,12 +334,12 @@
           window.current_location = "" + window.current_location + "/" + target;
           dir = dir[target];
         } else {
-          printL("cd: " + args[0] + ": Not a directory");
+          printLine("cd: " + args[0] + ": Not a directory");
           failure = true;
           break;
         }
       } else {
-        printL("cd: " + args[0] + ": No such file or directory");
+        printLine("cd: " + args[0] + ": No such file or directory");
         failure = true;
         break;
       }
@@ -334,6 +347,7 @@
     if (failure) {
       window.current_location = original_location;
     }
+    window.current_location = cleanLinks(window.current_location);
     return window.current_location;
   };
   runCommandMkdir = function(args) {
@@ -382,7 +396,7 @@
         new_dir = old_dir[target];
         target_name = entry;
       } else {
-        printL("mv: target `" + target + "' is not a directory");
+        printLine("mv: target `" + target + "' is not a directory");
         return;
       }
     } else {
@@ -437,6 +451,9 @@
       })(i));
     }
     return _results;
+  };
+  cleanLinks = function(link) {
+    return link.replace(/\/[a-zA-z0-9]*\/\.\./, "").replace(/\/\./, "").replace(/^\.*/, "");
   };
   stripTags = function(message) {
     return message.replace(/(<([^>]+)>)/ig, "");
@@ -501,8 +518,5 @@
     };
     return JSON.stringify(hashify());
   };
-  window.retrieve_input_line = retrieveInputLine;
-  window.pair = pairWordsAndTags;
-  window.zip = zipWordsAndTags;
   window.fsStringify = stringifyFileSystem;
 }).call(this);
