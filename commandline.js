@@ -1,9 +1,9 @@
 (function() {
-  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareVisualConsole, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
+  var COMMANDS, RESERVED_KEYS, TERMINAL_WIDTH, accessDirectory, breakForLineBreaks, crawl, createDirectory, createFile, extractCurrentInput, extractInputLine, extractTagName, handleKeyPress, handleReservedKey, injectToInput, injectToOutput, inputBackspace, inputEnter, inputLeft, inputRight, pairWordsAndTags, prepareFileSystem, prepareKeyListener, prepareReadline, print, printLine, retrieveDir, retrieveInputLine, runCommand, runCommandCd, runCommandEcho, runCommandLs, runCommandMkdir, runCommandMv, runCommandPwd, runCommandTouch, setCurrentAndParentReferences, shiftOutput, stringifyFileSystem, stripTags, substituteSpaces, unrecognizedCommand, updateCurrentInput, zipWordsAndTags;
   $(document).ready(function() {
     prepareFileSystem();
     prepareKeyListener();
-    return prepareVisualConsole();
+    return prepareReadline();
   });
   prepareFileSystem = function() {
     window.file_system = {
@@ -84,8 +84,11 @@
     return current_spot;
   };
   window.accessDirectory = accessDirectory;
-  prepareVisualConsole = function() {
-    window.current_input = "";
+  prepareReadline = function() {
+    window.readline = {
+      input: "",
+      index: 0
+    };
     return updateCurrentInput();
   };
   prepareKeyListener = function() {
@@ -110,24 +113,33 @@
     }
   };
   injectToInput = function(character) {
-    window.current_input += character;
+    var index, text;
+    text = window.readline['input'];
+    index = window.readline['index'];
+    window.readline['input'] = "" + (text.slice(0, index)) + character + (text.slice(index));
+    window.readline['index'] += 1;
     return updateCurrentInput();
   };
   updateCurrentInput = function() {
     var input_text;
-    input_text = substituteSpaces(retrieveInputLine());
+    input_text = substituteSpaces(retrieveInputLine(true));
     return $('#tl20').html(input_text);
   };
   substituteSpaces = function(input) {
-    return input.replace(/\ /g, "&nbsp;");
+    return input.replace(/\\{0} /g, "&nbsp;").replace(/\\{1}&nbsp;/g, " ");
   };
   handleReservedKey = function(keyCode) {
     return RESERVED_KEYS[keyCode]();
   };
   inputBackspace = function() {
-    var current;
-    current = window.current_input;
-    window.current_input = current.substring(0, current.length - 1);
+    var index, text;
+    text = window.readline['input'];
+    index = window.readline['index'];
+    if (index === 0) {
+      return;
+    }
+    window.readline['input'] = "" + (text.slice(0, index - 1)) + (text.slice(index));
+    window.readline['index'] -= 1;
     return updateCurrentInput();
   };
   inputEnter = function() {
@@ -135,13 +147,57 @@
     printLine(extractInputLine());
     command = extractCurrentInput();
     runCommand(command);
+    window.readline['index'] = 0;
+    return updateCurrentInput();
+  };
+  inputLeft = function() {
+    window.readline['index'] -= 1;
+    if (window.readline['index'] < 0) {
+      window.readline['index'] = 0;
+    }
+    return updateCurrentInput();
+  };
+  inputRight = function() {
+    var input_length;
+    input_length = window.readline['input'].length;
+    window.readline['index'] += 1;
+    if (window.readline['index'] > input_length) {
+      window.readline['index'] = input_length;
+    }
     return updateCurrentInput();
   };
   RESERVED_KEYS = {
     8: inputBackspace,
-    13: inputEnter
+    13: inputEnter,
+    37: inputLeft,
+    39: inputRight
   };
   window.reserved = RESERVED_KEYS;
+  retrieveInputLine = function(use_index) {
+    var index, input_text, ps1;
+    if (use_index == null) {
+      use_index = false;
+    }
+    index = window.readline['index'];
+    input_text = "" + window.readline['input'] + " ";
+    if (use_index) {
+      input_text = "" + (input_text.slice(0, index)) + "<span\\ id=\"readline_cursor\">" + input_text[index] + "</span>" + (input_text.slice(index + 1));
+    }
+    ps1 = window.current_location;
+    return "" + ps1 + "$ " + input_text;
+  };
+  extractInputLine = function() {
+    var result;
+    result = retrieveInputLine();
+    $('#tl20').text("");
+    return result;
+  };
+  extractCurrentInput = function() {
+    var command;
+    command = window.readline['input'];
+    window.readline['input'] = "";
+    return command;
+  };
   TERMINAL_WIDTH = 80;
   print = function(message) {
     var bottom, current_text, piece, _i, _len, _results;
@@ -291,6 +347,10 @@
   };
   runCommandMv = function(args) {
     var entries, entry, new_dir, old_dir, old_loc, target, target_name;
+    if (args.length < 2) {
+      printLine("mv: missing destination file operand after `" + args[0] + "'");
+      return;
+    }
     target = args.pop();
     entry = args[0];
     old_dir = retrieveDir();
@@ -354,23 +414,6 @@
       })(i));
     }
     return _results;
-  };
-  retrieveInputLine = function() {
-    var ps1;
-    ps1 = window.current_location;
-    return "" + ps1 + "$ " + window.current_input;
-  };
-  extractInputLine = function() {
-    var result;
-    result = retrieveInputLine();
-    $('#tl20').text("");
-    return result;
-  };
-  extractCurrentInput = function() {
-    var command;
-    command = window.current_input;
-    window.current_input = "";
-    return command;
   };
   stripTags = function(message) {
     return message.replace(/(<([^>]+)>)/ig, "");

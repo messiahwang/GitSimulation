@@ -1,4 +1,9 @@
+require 'selenium-webdriver'
 require 'json'
+
+def get_chrome
+  $chrome ||= Selenium::WebDriver.for :chrome
+end
 
 def generate_default_filesystem
   {
@@ -41,15 +46,21 @@ def set_environment(browser, type = :default)
 end
 
 def run_command(browser, command)
-  sleep 0.1
+  sleep 0.02
   browser.keyboard.send_keys(command)
   browser.keyboard.send_keys(:enter)
 end
 
 
 module BrowserShortcuts
+
   def run(command)
     run_command(@browser, command)
+  end
+
+  def send_keys(keys)
+    @browser.keyboard.send_keys(keys)
+    sleep 0.02
   end
 
   def execute(script)
@@ -58,5 +69,21 @@ module BrowserShortcuts
 
   def retrieve_file_system
     JSON.parse(@browser.execute_script(%Q[return fsStringify();]), :symbolize_names => true)
+  end
+
+  def get_element_text(id)
+    @browser.find_element(:id, id).text
+  end
+
+  def prepare_web_driver
+    @chrome = get_chrome
+    @chrome.get "http://davidpmah.com/test/gitsimulation"
+    @browser = @chrome
+    set_environment(@chrome)
+  end
+
+  def close_web_driver
+    $chrome.close
+    $chrome = nil
   end
 end

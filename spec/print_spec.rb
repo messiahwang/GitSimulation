@@ -2,23 +2,17 @@
 # Non git functions
 # ls, cd, mkdir, touch, echo, mv
 
-require 'selenium-webdriver'
-require 'json'
 require_relative 'interaction_helper.rb'
-describe "GitSimulation" do
 
-  def run(command)
-    run_command(@chrome, command)
-  end
+describe "GitSimulation" do
+  include BrowserShortcuts
 
   before :each do
-    @chrome = Selenium::WebDriver.for :chrome
-    @chrome.get "http://davidpmah.com/test/gitsimulation"
-    set_environment(@chrome)
+    prepare_web_driver
   end
 
-  after :each do
-    @chrome.close
+  after (:all) do
+    close_web_driver
   end
 
   # This will break if the terminal size is changed.. 

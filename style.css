@@ -34,3 +34,6 @@ body {
   float: left;
 }
 
+#readline_cursor {
+  background-color: #AAAAAA;
+}

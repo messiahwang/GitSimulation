@@ -2,23 +2,19 @@
 # Non git functions
 # ls, cd, mkdir, touch, echo, mv
 
-require 'selenium-webdriver'
-require 'json'
 require_relative "interaction_helper.rb"
 
 describe "GitSimulation" do
   include BrowserShortcuts
 
   before :each do
-    @chrome = Selenium::WebDriver.for :chrome
-    @chrome.get "http://davidpmah.com/test/gitsimulation"
-    @browser = @chrome
-    set_environment(@chrome)
+    prepare_web_driver
   end
 
-  after :each do
-    @chrome.close
+  after(:all) do
+    close_web_driver
   end
+
   describe "ls" do
     it "should read from the local _entries list" do
       run('ls')

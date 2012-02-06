@@ -8,7 +8,7 @@
 $(document).ready(() ->
   prepareFileSystem()
   prepareKeyListener()
-  prepareVisualConsole()
+  prepareReadline()
 )
 
 # --------------- <File> System Stuff -------------
@@ -82,8 +82,10 @@ window.accessDirectory = accessDirectory
 
 # --------------- User <Input> Stuff -------------
 
-prepareVisualConsole = () ->
-  window.current_input = ""
+prepareReadline = () ->
+  window.readline = 
+    input: ""
+    index: 0
   updateCurrentInput()
 
 prepareKeyListener = () ->
@@ -106,42 +108,81 @@ handleKeyPress = (e) ->
     injectToInput(String.fromCharCode(keyCode))
 
 injectToInput = (character) ->
-  window.current_input += character
+  text  = window.readline['input']
+  index = window.readline['index']
+  window.readline['input'] = "#{text.slice(0, index)}#{character}#{text.slice(index)}"
+  window.readline['index'] += 1
   updateCurrentInput()
 
 updateCurrentInput = () ->
-  input_text = substituteSpaces(retrieveInputLine())
+  input_text = substituteSpaces(retrieveInputLine(true))
   $('#tl20').html(input_text)
 
 substituteSpaces = (input) ->
-  input.replace(/\ /g, "&nbsp;")
+  input.replace(/\\{0} /g, "&nbsp;").replace(/\\{1}&nbsp;/g, " ")
 
 handleReservedKey = (keyCode) ->
   RESERVED_KEYS[keyCode]()
 
 # Individual functions for each reserved key
 inputBackspace = () ->
-  current = window.current_input
-  window.current_input = current.substring(0, current.length - 1)
+  text  = window.readline['input']
+  index = window.readline['index']
+  return if index == 0
+  window.readline['input']   = "#{text.slice(0, index - 1)}#{text.slice(index)}"
+  window.readline['index'] -= 1
   updateCurrentInput()
 
 inputEnter = () ->
   printLine(extractInputLine())
   command = extractCurrentInput()
   runCommand(command)
+  window.readline['index'] = 0
+  updateCurrentInput()
+
+inputLeft = () ->
+  window.readline['index'] -= 1
+  window.readline['index']  = 0 if window.readline['index'] < 0
+  updateCurrentInput()
+
+inputRight = () ->
+  input_length = window.readline['input'].length
+  window.readline['index'] += 1
+  window.readline['index']  = input_length if window.readline['index'] > input_length
   updateCurrentInput()
 
 RESERVED_KEYS =
   8:  inputBackspace
   13: inputEnter
+  37: inputLeft
+  39: inputRight
 window.reserved = RESERVED_KEYS
 
-## -------- End of User Input Stuff --------------
+# ------------- Misc input stuff ---------------
 
+retrieveInputLine = (use_index = false) ->
+  index      = window.readline['index']
+  input_text = "#{window.readline['input']} "
+  if use_index
+    input_text = "#{input_text.slice(0, index)}<span\\ id=\"readline_cursor\">#{input_text[index]}</span>#{input_text.slice(index + 1)}"
+  ps1 = window.current_location
+  "#{ps1}$ #{input_text}"
+
+extractInputLine = () ->
+  result = retrieveInputLine()
+  $('#tl20').text("")
+  result
+
+extractCurrentInput = () ->
+  command = window.readline['input']
+  window.readline['input'] = ""
+  command
+
+## -------- End of User Input Stuff --------------
+# --------- <Output> Stuff ----------------------
 
 TERMINAL_WIDTH = 80
 
-# --------- <Output> Stuff ----------------------
 print = (message) ->
   message = message.split("\n")
   bottom  = $('#tl20')
@@ -332,19 +373,6 @@ shiftOutput = () ->
 
 
 # -------------- <Misc> -----------
-retrieveInputLine = () ->
-  ps1 = window.current_location
-  "#{ps1}$ #{window.current_input}"
-
-extractInputLine = () ->
-  result = retrieveInputLine()
-  $('#tl20').text("")
-  result
-
-extractCurrentInput = () ->
-  command = window.current_input
-  window.current_input = ""
-  command
 
 stripTags = (message) ->
   message.replace(/(<([^>]+)>)/ig,"")
