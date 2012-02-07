@@ -437,6 +437,9 @@
     return accessDirectory(window.current_location);
   };
   createDirectory = function(dir, entry) {
+    if (dir[entry] !== void 0) {
+      return false;
+    }
     dir[entry] = {
       '..': dir,
       _type: 'directory',
@@ -485,7 +488,11 @@
   runGitInit = function(args) {
     var dir;
     dir = retrieveDir();
-    createDirectory(dir, '.git');
+    if (!createDirectory(dir, '.git')) {
+      printLine("Reinitialized existing Git repository in " + window.current_location + "/.git/");
+      return;
+    }
+    printLine("Initialized empty Git repository in " + window.current_location + "/.git/");
     createDirectory(dir['.git'], 'branches');
     dir['.git']['branches']['_entries'].push('master');
     dir['.git']['branches']['master'] = dir;
@@ -495,7 +502,7 @@
     if (args.length === 0) {
       return listBranches();
     } else {
-      return createBranch(arg[0]);
+      return createBranch(args[0]);
     }
   };
   GITCOMMANDS = {

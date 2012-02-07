@@ -391,6 +391,7 @@ retrieveDir = () ->
   accessDirectory(window.current_location)
 
 createDirectory = (dir, entry) ->
+  return false if dir[entry] != undefined
   dir[entry] =
     '..':     dir
     _type:    'directory'
@@ -430,7 +431,10 @@ shiftOutput = () ->
 #--------------- <Git> -----------
 runGitInit = (args) ->
   dir = retrieveDir()
-  createDirectory(dir, '.git')
+  if not createDirectory(dir, '.git')
+    printLine("Reinitialized existing Git repository in #{window.current_location}/.git/")
+    return
+  printLine("Initialized empty Git repository in #{window.current_location}/.git/")
   createDirectory(dir['.git'], 'branches')
   # Todo:
   # Change usage to text files
@@ -442,7 +446,7 @@ runGitBranch = (args) ->
   if args.length == 0
     listBranches()
   else
-    createBranch(arg[0])
+    createBranch(args[0])
 
 GITCOMMANDS =
   init:   runGitInit
