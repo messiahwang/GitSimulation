@@ -486,7 +486,7 @@
     return _results;
   };
   runGitInit = function(args) {
-    var dir;
+    var branch_dir, dir;
     dir = retrieveDir();
     if (!createDirectory(dir, '.git')) {
       printLine("Reinitialized existing Git repository in " + window.current_location + "/.git/");
@@ -494,9 +494,12 @@
     }
     printLine("Initialized empty Git repository in " + window.current_location + "/.git/");
     createDirectory(dir['.git'], 'branches');
-    dir['.git']['branches']['_entries'].push('master');
-    dir['.git']['branches']['master'] = dir;
-    return dir['.git']['branches']['_current'] = "master";
+    branch_dir = dir['.git']['branches'];
+    branch_dir['_branches'] = [];
+    branch_dir['master'] = dir;
+    branch_dir['_current'] = "master";
+    branch_dir['_entries'].push('master');
+    return branch_dir['_branches'].push('master');
   };
   runGitBranch = function(args) {
     if (args.length === 0) {
@@ -515,7 +518,7 @@
     if (git_dir === null) {
       return;
     }
-    entries = git_dir['branches']['_entries'];
+    entries = git_dir['branches']['_branches'];
     current = git_dir['branches']['_current'];
     result = "";
     for (_i = 0, _len = entries.length; _i < _len; _i++) {
@@ -579,27 +582,29 @@
     }
   };
   stringifyFileSystem = function() {
-    var accessed_table, hashify;
+    var accessed_table, hashify, r;
     accessed_table = {};
     hashify = function(root) {
       var entry, result, _i, _len, _ref;
       if (root == null) {
         root = window.file_system[''];
       }
-      console.log(root);
       accessed_table[root['_id']] = true;
       result = $.extend({}, root);
       if (root['_type'] === 'directory') {
         _ref = root['_entries'];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           entry = _ref[_i];
-          console.log(accessed_table);
-          result[entry] = accessed_table[result[entry]['_id']] ? {} : hashify(root[entry]);
+          result[entry] = accessed_table[result[entry]['_id']] ? {
+            '_id': result[entry]['_id']
+          } : hashify(root[entry]);
         }
       }
       return result;
     };
-    return JSON.stringify(hashify());
+    r = hashify();
+    console.log(r);
+    return JSON.stringify(r);
   };
   window.fsStringify = stringifyFileSystem;
 }).call(this);

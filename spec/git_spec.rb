@@ -21,7 +21,7 @@ describe "Git Spec" do
       @fs[:".git"].should_not == nil
       @fs[:_entries].include?('.git').should == true
       branch_path = @fs[:".git"][:branches]
-      branch_path[:_entries].include?('master').should == true
+      branch_path[:_branches].include?('master').should == true
       branch_path[:master].should_not == nil
       branch_path[:_current].should == "master"
     end
@@ -29,8 +29,13 @@ describe "Git Spec" do
 
   describe "git branch" do
     before :each do 
+      execute(%Q[window.file_system['']['.git'] = {}])
+      execute(%Q[window.file_system['']['.git']['branches'] = {}])
+      execute(%Q[window.file_system['']['.git']['branches']['current'] = 'master'])
+      execute(%Q[window.file_system['']['.git']['branches']['master'] = {}])
       execute(%Q[window.file_system['']['.git']['branches']['dev'] = {}])
-      execute(%Q[window.file_system['']['.git']['branches']['_entries'].push('dev')])
+      execute(%Q[window.file_system['']['.git']['branches']['_entries'] = ['.', '..', 'master', 'dev']])
+      execute(%Q[window.file_system['']['.git']['branches']['_branches'] = ['master', 'dev']])
     end
 
     it "should list the available branches" do
@@ -50,16 +55,16 @@ describe "Git Spec" do
       run('git branch garpley')
       retrieve_file_system
       branch_path = @fs[:".git"][:branches]
-      branch_path[:_entries].include?('garpley').should == true
+      branch_path[:_branches].include?('garpley').should == true
       branch_path[:garpley].should_not == nil
     end
 
     it "should not erase a preexisting branch" do
-      entry_count = retrieve_file_system[:".git"][:branches][:_entries].size
+      entry_count = retrieve_file_system[:".git"][:branches][:_branches].size
       run('git branch dev')
       retrieve_file_system
       branch_path = @fs[:".git"][:branches]
-      branch_path[:_entries].size.should == entry_count
+      branch_path[:_branches].size.should == entry_count
       get_element_text('tl19').should == "fatal: A branch named 'dev' already exists."
     end
   end

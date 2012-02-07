@@ -438,9 +438,12 @@ runGitInit = (args) ->
   createDirectory(dir['.git'], 'branches')
   # Todo:
   # Change usage to text files
-  dir['.git']['branches']['_entries'].push 'master'
-  dir['.git']['branches']['master']   = dir
-  dir['.git']['branches']['_current'] = "master"
+  branch_dir = dir['.git']['branches']
+  branch_dir['_branches'] = []
+  branch_dir['master']    = dir
+  branch_dir['_current']  = "master"
+  branch_dir['_entries'].push 'master'
+  branch_dir['_branches'].push 'master'
 
 runGitBranch = (args) ->
   if args.length == 0
@@ -456,7 +459,7 @@ GITCOMMANDS =
 listBranches = () ->
   git_dir = getGitDir()
   return if git_dir == null
-  entries = git_dir['branches']['_entries']
+  entries = git_dir['branches']['_branches']
   current = git_dir['branches']['_current']
   result = ""
   for entry in entries
@@ -516,14 +519,16 @@ extractTagName = (text) ->
 stringifyFileSystem = () ->
   accessed_table = {}
   hashify = (root = window.file_system['']) ->
-    console.log(root)
+    # console.log(root)
     accessed_table[root['_id']] = true
     result = $.extend({}, root)
     if root['_type'] == 'directory'
       for entry in root['_entries']
-        console.log(accessed_table)
-        result[entry] = if accessed_table[result[entry]['_id']] then {} else hashify(root[entry])
+        # console.log(entry)
+        result[entry] = if accessed_table[result[entry]['_id']] then {'_id':result[entry]['_id']} else hashify(root[entry])
     result
-  JSON.stringify(hashify())
+  r = hashify()
+  console.log(r)
+  JSON.stringify(r)
 
 window.fsStringify = stringifyFileSystem
