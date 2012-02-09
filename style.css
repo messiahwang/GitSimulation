@@ -23,11 +23,12 @@ body {
 }
 
 #info {
-  width: 300px;
+  width: 290px;
 }
 
 #instructions{
   width: 300px;
+  margin-left: 5px;
 }
 
 #info, #terminal, #instructions {

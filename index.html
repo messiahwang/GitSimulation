@@ -1,9 +1,9 @@
 <html>
   <head>
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>-->
-    <script src="jquery.js" type="text/javascript"></script>
-    <!-- <script src="jquery.string.1.1.0-min.js" type="text/javascript"></script>-->
-    <script src="commandline.js" type="text/javascript"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <!-- <script src="lib/jquery.js" type="text/javascript"></script>-->
+    <script src="lib/observer.js" type="text/javascript"></script>
+    <script src="lib/commandline.js" type="text/javascript"></script>
     <link  href="style.css"   type="text/css" rel="stylesheet"/>
     <title>Interactive Git Tutorial</title>
   </head>
@@ -21,18 +21,20 @@
           <li>mv</li>
           <li>Tab Autocomplete</li>
           <li>git init</li>
+          <li>git branch</li>
+          <li>git checkout</li>
         </ul>
       </div>
       <table id="terminal" border="0" cellspacing="0" cellpadding="0">
-        <tr id="tl1" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl2" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl3" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl4" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl5" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl6" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl7" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl8" class="terminal_line" height=20><td></td></tr>
-        <tr id="tl9" class="terminal_line" height=20><td></td></tr>
+        <tr id="tl1"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl2"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl3"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl4"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl5"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl6"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl7"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl8"  class="terminal_line" height=20><td></td></tr>
+        <tr id="tl9"  class="terminal_line" height=20><td></td></tr>
         <tr id="tl10" class="terminal_line" height=20><td></td></tr>
         <tr id="tl11" class="terminal_line" height=20><td></td></tr>
         <tr id="tl12" class="terminal_line" height=20><td></td></tr>
@@ -46,6 +48,7 @@
         <tr id="tl20" class="terminal_line" height=20><td></td></tr>
       </table>
       <div id="instructions">
+        Example Text
       </div>
     </div>
   </body>

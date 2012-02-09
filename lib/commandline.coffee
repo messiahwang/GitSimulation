@@ -10,6 +10,7 @@ $(document).ready(() ->
   prepareFileSystem()
   prepareKeyListener()
   prepareReadline()
+  window.initializeObserver()
 )
 
 # --------------- <File> System Stuff -------------
@@ -54,6 +55,8 @@ prepareFileSystem = () ->
   window.current_location = "/home/bob"
   assignUniqueIds()
   setCurrentAndParentReferences()
+  window.file_system.parsePathname   = parsePathname
+  window.file_system.accessDirectory = accessDirectory
 
 # Makes all . point to the same directory
 # and makes all .. point to the parent directory
@@ -89,12 +92,18 @@ crawl = (current_dir = window.file_system[''], current_name, action = null) ->
     crawl(current_dir[entry], entry, action) if continue_crawl
 
 accessDirectory = (pathname) ->
-  paths = pathname.split("/")
-  paths.shift()
+  paths = parsePathname(pathname)
   current_spot = window.file_system['']
   for path in paths
     current_spot = current_spot[path]
   current_spot
+
+parsePathname = (pathname) ->
+  pathname = pathname.replace(/\/$/, '')
+  paths = pathname.split("/")
+  paths.shift() # Remove the first ''
+  paths
+
 
 # --------------- User <Input> Stuff -------------
 
@@ -512,8 +521,6 @@ getGitDir = (curr = retrieveDir()) ->
 # Given a parent and a child, find the name from the parent to the child 
 getLinkName = (parent, dir) ->
   # The root is strange
-  console.log(parent)
-  console.log(dir)
   return '' if parent == window.file_system
   for entry in parent['_entries']
     if parent[entry] == dir

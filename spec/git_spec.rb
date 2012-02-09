@@ -93,7 +93,6 @@ describe "Git Spec" do
 
     it "should switch into the given branch" do
       run('git checkout dev')
-      sleep 42
       retrieve_file_system
       branch_path = @fs[:".git"][:branches]
       get_element_text('tl19').should == %Q[Switched to branch 'dev']

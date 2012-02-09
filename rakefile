@@ -13,5 +13,5 @@ end
 
 desc "compile coffee"
 task :build do
-  sh %{coffee -c *.coffee}
+  sh %{coffee -c lib/*.coffee}
 end
