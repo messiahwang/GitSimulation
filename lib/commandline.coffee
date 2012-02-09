@@ -10,6 +10,7 @@ $(document).ready(() ->
   prepareFileSystem()
   prepareKeyListener()
   prepareReadline()
+  window.observeLoop()
 )
 
 # --------------- <File> System Stuff -------------
