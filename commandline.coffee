@@ -449,11 +449,35 @@ runGitBranch = (args) ->
   if args.length == 0
     listBranches()
   else
-    createBranch(args[0])
+    result = createBranch(args[0])
+    printLine("fatal: A branch named '#{args[0]}' already exists.") if result == false
+
+runGitCheckout = (args) ->
+  git_dir = getGitDir()
+  return if args.length == 0 or git_dir == null
+  target_branch_name = args[0]
+  branch_dir = git_dir['branches']
+  if branch_dir['_entries'].indexOf(target_branch_name) != -1
+    target_branch = branch_dir[target_branch_name]
+    console.log("target branch")
+    console.log(target_branch)
+    branch_dir['_current'] = target_branch_name
+    pre_root_dir = git_dir['..']['..']
+    console.log("pre root")
+    console.log(pre_root_dir)
+    console.log("git dir parent")
+    console.log(git_dir['..'])
+    pre_root_name = getLinkName(pre_root_dir, git_dir['..'])
+    console.log(pre_root_name)
+    pre_root_dir[pre_root_name] = target_branch
+    target_branch['..'] = pre_root_dir
+    git_dir['..'] = target_branch
+
 
 GITCOMMANDS =
-  init:   runGitInit
-  branch: runGitBranch
+  init:     runGitInit
+  branch:   runGitBranch
+  checkout: runGitCheckout
 
 # Misc Git helprs
 listBranches = () ->
@@ -469,6 +493,17 @@ listBranches = () ->
 
 
 createBranch = (branch_name) ->
+  git_dir = getGitDir()
+  return if git_dir == null
+  return false if git_dir['branches']['_entries'].indexOf(branch_name) != -1
+  new_branch = cloneFileSystem(git_dir['..'])
+  new_branch['.git'] = git_dir
+  branch_dir = git_dir['branches']
+  branch_dir['_entries'].push branch_name
+  branch_dir['_branches'].push branch_name
+  branch_dir[branch_name] = new_branch
+  true
+
 
 getGitDir = (curr = retrieveDir()) ->
   if curr['.git'] != undefined
@@ -480,6 +515,17 @@ getGitDir = (curr = retrieveDir()) ->
     getGitDir(curr['..'])
 
 # -------------- <Misc> -----------
+
+# Given a parent and a child, find the name from the parent to the child 
+getLinkName = (parent, dir) ->
+  console.log("<-------->")
+  console.log(parent)
+  console.log(dir)
+  for entry in parent['_entries']
+    if parent[entry] == dir
+      console.log('===========')
+      return entry
+  null
 
 # This disgusts me.. live with it for now
 cleanLinks = (link) ->
@@ -516,19 +562,38 @@ extractTagName = (text) ->
 
 # This is in misc because it's really just for debugging
 # Makes json.. but with empty objects for upper referencing links
-stringifyFileSystem = () ->
-  accessed_table = {}
-  hashify = (root = window.file_system['']) ->
-    # console.log(root)
-    accessed_table[root['_id']] = true
+stringifyFileSystem = (root = window.file_system['']) ->
+  JSON.stringify(hashFileSystem(root))
+window.fsStringify = stringifyFileSystem
+
+# Clones the file system, but all links that return to a former node
+# are substituted with {'_id':__, '_type':'dummy'}
+hashFileSystem = (root = window.file_system[''], accessed_table = {}) ->
     result = $.extend({}, root)
+    hashNonLinkData(result)
+    accessed_table[root['_id']] = result
     if root['_type'] == 'directory'
       for entry in root['_entries']
-        # console.log(entry)
-        result[entry] = if accessed_table[result[entry]['_id']] then {'_id':result[entry]['_id']} else hashify(root[entry])
+        result[entry] = if accessed_table[result[entry]['_id']] then {'_id':result[entry]['_id'], '_type':'dummy'} else hashFileSystem(root[entry], accessed_table)
     result
-  r = hashify()
-  console.log(r)
-  JSON.stringify(r)
 
-window.fsStringify = stringifyFileSystem
+# For now.. on a one key at a time basis
+hashNonLinkData = (root) ->
+  root['_entries'] = root['_entries'].slice(0) if root['_entries']
+
+cloneFileSystem = (root = window.file_system['']) ->
+  reference_table = {}
+  clone = hashFileSystem(root, reference_table)
+  replaceDummyNodes(clone, reference_table)
+
+replaceDummyNodes = (root, reference_table) ->
+  if root['_type'] == 'directory'
+    for entry in root['_entries']
+      if(root[entry]['_type'] == 'dummy')
+        root[entry] = reference_table[root[entry]['_id']]
+      else
+        replaceDummyNodes(root[entry], reference_table)
+  root
+
+window.fsHash = hashFileSystem
+window.fsClone = cloneFileSystem
