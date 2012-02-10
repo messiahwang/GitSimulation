@@ -12,11 +12,14 @@
 #   - ran_command <Command>
 TUTORIAL = [
   {
-    text: "run `git init` in bob's example_directory_1"
+    text: [
+      "Welcome to this interactive Git tutorial!"
+      "Run `git init` in bob's example_directory_1"
+    ]
     rules: ["exists /home/bob/example_directory_1/.git"]
   },
   {
-    text: "run `git branch` anywhere within example_directory_1 to see your current branches"
+    text: "Run `git branch` anywhere within example_directory_1 to see your current branches"
     rules: ["ran_command git branch"]
   },
 ]
@@ -50,12 +53,12 @@ nextRule = () ->
   if current_step < tutorial.length
     rule = prepareRule(tutorial[current_step])
   else
-    $('#instructions').text("You've cleared this tutorial! Congrats.. move on with your life")
+    setInstructionText("You've cleared this tutorial! Congrats.. move on with your life")
     clearInterval(window.observer.monitor_timer)
 
 prepareRule = (item) ->
   text = item['text']
-  $('#instructions').text(text)
+  setInstructionText(text)
   window.observer['tests'] = generateTests(item['rules'])
 
 checkRule = () ->
@@ -94,6 +97,11 @@ generateHasTextTest = (args) ->
 generateRanCommandTest = (args) ->
   () -> false
 
+# Miscy stuff
+setInstructionText = (text) ->
+  text = [text] if (typeof text == "string")
+  formatted_text = text.map((t) -> "<p>#{t}</p>").join(" ")
+  $('#instructions').html(formatted_text)
 
 window.observeLoop = observeLoop
 window.initializeObserver = initializeObserver
