@@ -2,9 +2,9 @@ body {
 }
 
 #browser {
-  width:  1400px;
+  width:  1200px;
   height: 400px;
-  margin: auto auto auto auto;
+  margin: 50px auto auto auto;
   /* background-color: Black;*/
 }
 
@@ -28,11 +28,26 @@ body {
 
 #instructions{
   width: 300px;
-  margin-left: 5px;
+  margin-left: 45px;
 }
 
 #info, #terminal, #instructions {
   float: left;
+}
+
+#top_pane {
+  margin:     10px auto auto auto;
+  width:      400px;
+  text-align: center;
+}
+
+ul {
+  list-style: none;
+}
+
+li {
+  display: inline;
+  margin: 0px 15px 0px 15px;
 }
 
 #readline_cursor {

@@ -14,7 +14,7 @@ TUTORIAL = [
   {
     text: [
       "Welcome to this interactive Git tutorial! The difficulty of this is meant for if you have sort of used the command line before but don't really understand anything."
-      "Let's start by making a new git project. Make a directory called 'project' in bob's home directory."
+      "Let's start by making a new git project. Make a directory called <strong>project</strong> in bob's home directory."
       "You can use the <strong>mkdir</strong> command to make this directory."
     ]
     rules: ["exists /home/bob/project"]
@@ -57,7 +57,7 @@ nextRule = () ->
   if current_step < tutorial.length
     rule = prepareRule(tutorial[current_step])
   else
-    setInstructionText("You've cleared this tutorial! Congrats.. move on with your life")
+    setInstructionText("You've cleared this tutorial! It's unfortunate that there isn't more yet. Congrats.. you can move on with your life")
     clearInterval(window.observer.monitor_timer)
 
 prepareRule = (item) ->
