@@ -5,11 +5,11 @@ describe "Observer" do
   before :each do
     tutorial = [{
                   'text'  => "example garpley1",
-                  'rules' => ["exists file38"]
+                  'rules' => ["exists /file38"]
                 },
                 {
                   'text'  => "example garpley2",
-                  'rules' => ["exists file123"]
+                  'rules' => ["exists /file123"]
                 },
                 {
                   'text'  => "example garpley3",
@@ -31,20 +31,20 @@ describe "Observer" do
 
     it "should transition to the next rule once that file exists" do
       run('touch file38')
-      sleep(0.5)
+      sleep(0.6)
       get_element_text('instructions').should == 'example garpley2'
     end
 
     it "should move me to the next rule using nextRule" do
-      execute(%Q[window.nextRule()])
+      execute(%Q[window.observer.nextRule()])
       get_element_text('instructions').should == 'example garpley2'
     end
 
     it "should transition to the next rule once that command is run" do
-      execute(%Q[window.nextRule()])
-      execute(%Q[window.nextRule()])
+      execute(%Q[window.observer.nextRule()])
+      execute(%Q[window.observer.nextRule()])
       run('git init')
-      get_element_text('instructions').should == 'example garpley_3'
+      get_element_text('instructions').should == 'example garpley3'
     end
   end
 end
