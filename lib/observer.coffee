@@ -82,13 +82,11 @@ window.generate_test = generateTest
 
 # args form should just be <file> or <dir> path.. with only one argument
 generateExistTest = (args) ->
-  path       = window.file_system.parsePathname(args[0])
-  endpoint   = path.pop()
-  wait_point = window.file_system.accessDirectory("/#{path.join("/")}")
-  window.end = wait_point
-  window.tip = endpoint
-  window.wait = () -> wait_point[endpoint] != undefined
-  window.wait
+  () ->
+    try
+      window.file_system.accessDirectory(args[0]) != undefined
+    catch error
+      false
 
 
 generateHasTextTest = (args) ->
