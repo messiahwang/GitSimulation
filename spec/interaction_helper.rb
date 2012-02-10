@@ -40,7 +40,14 @@ def set_extended_environment(browser)
   browser.execute_script(%Q[window.current_location = ""])
 end
 
-def set_environment(browser, type = :default)
+def set_tutorial(browser, tutorial)
+  browser.execute_script(%Q[window.observer.tutorial = #{tutorial}])
+  browser.execute_script(%Q[window.observeReset()])
+end
+
+def set_environment(browser, options = {})
+  type = options[:type]
+  set_tutorial(browser, options[:tutorial])
   if type == :default
     set_default_environment(browser)
   else
@@ -79,11 +86,11 @@ module BrowserShortcuts
     @browser.find_element(:id, id).text
   end
 
-  def prepare_web_driver
+  def prepare_web_driver(options = {})
     @chrome = get_chrome
     @chrome.get "http://davidpmah.com/test/gitsimulation"
     @browser = @chrome
-    set_environment(@chrome)
+    set_environment(@chrome, options)
   end
 
   def close_web_driver

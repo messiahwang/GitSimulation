@@ -50,7 +50,7 @@ describe "GitSimulation" do
 
   describe 'cd' do
     before :each do
-      set_environment(@chrome, :extended)
+      set_environment(@chrome, :type => :extended)
     end
 
     it "should switch relative directories" do
