@@ -42,11 +42,15 @@ monitor = () ->
     nextRule()
 
 nextRule = () ->
+  tutorial = window.observer.tutorial
   window.observer.current_step += 1
-  if not window.observer.current_step > window.observer.tutorial.length
-    rule = prepareRule()
+  current_step = window.observer.current_step
+  if current_step < tutorial.length
+    console.log("well.. yeah")
+    rule = prepareRule(tutorial[current_step])
   else
-    console.log("cleared")
+    console.log("wut")
+    $('#instructions').text("You've cleared this tutorial! Congrats.. move on with your life")
     clearInterval(window.observer.monitor_timer)
 
 prepareRule = (item) ->
@@ -67,8 +71,9 @@ generateTests = (rules) ->
   return rules.map(generateTest)
 
 generateTest = (rule) ->
-  () -> true
+  () -> false
 
 window.observeLoop = observeLoop
 window.initializeObserver = initializeObserver
 window.observeReset = reset
+window.nextRule = nextRule
