@@ -13,14 +13,18 @@
 TUTORIAL = [
   {
     text: [
-      "Welcome to this interactive Git tutorial!"
-      "Run `git init` in bob's example_directory_1"
+      "Welcome to this interactive Git tutorial! The difficulty of this is meant for if you have sort of used the command line before but don't really understand anything."
+      "Let's start by making a new git project. Make a directory called 'project' in bob's home directory."
+      "You can use the <strong>mkdir</strong> command to make this directory."
     ]
-    rules: ["exists /home/bob/example_directory_1/.git"]
+    rules: ["exists /home/bob/project"]
   },
   {
-    text: "Run `git branch` anywhere within example_directory_1 to see your current branches"
-    rules: ["ran_command git branch"]
+    text: [
+      "Awesome. We want to initialize this as a git repository."
+      "Run <strong>git init</strong> within the project directory. You'll probably want to <strong>cd</strong> into it first."
+    ]
+    rules: ["exists /home/bob/project/.git"]
   },
 ]
 

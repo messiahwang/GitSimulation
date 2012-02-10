@@ -9,11 +9,11 @@ describe "Observer" do
                 },
                 {
                   'text'  => "example garpley2",
-                  'rules' => ["exists /file123"]
+                  'rules' => ["ran_command git init"]
                 },
                 {
                   'text'  => "example garpley3",
-                  'rules' => ["ran_command git init"]
+                  'rules' => ['has_text /file38 turtles turtles']
                 },
 
     ].to_json
@@ -42,10 +42,15 @@ describe "Observer" do
 
     it "should transition to the next rule once that command is run" do
       execute(%Q[window.observer.nextRule()])
-      execute(%Q[window.observer.nextRule()])
       run('git init')
       get_element_text('instructions').should == 'example garpley3'
     end
+
+    # it "should transition to the next rule once that text is noticed to have the content"
+    #   execute(%Q[window.observer.nextRule()])
+    #   run('git init')
+    #   get_element_text('instructions').should == 'example garpley3'
+    # end
   end
 end
 
